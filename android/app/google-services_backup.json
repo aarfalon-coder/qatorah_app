@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "325812686674",
+    "project_id": "qatora-56dcd",
+    "storage_bucket": "qatora-56dcd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:325812686674:android:49697777b4dc45863c748b",
+        "android_client_info": {
+          "package_name": "com.example.qatorah"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvVymbvODQnFM9roYDNOFGQk6erdvpL4Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

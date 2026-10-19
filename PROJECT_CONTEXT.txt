@@ -1,0 +1,505 @@
+﻿╔══════════════════════════════════════════════════════════╗
+║        تقرير شامل عن مشروع قطوره (Qatorah)             ║
+╚══════════════════════════════════════════════════════════╝
+
+📅 تاريخ التقرير: 2026-10-15 17:01
+📁 مسار المشروع: C:\Users\ToughBook Owner\QatorahProject\qatorah_new
+
+═══════════════════════════════════════════════════════════
+📦 معلومات المشروع (من pubspec.yaml):
+═══════════════════════════════════════════════════════════
+name: qatorah_app
+description: ØªØ·Ø¨ÙŠÙ‚ Ù‚Ø·ÙˆØ±Ù‡ - Ù…Ù†ØµØ© Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ù…Ø§Ø¦ÙŠØ© ÙˆØ§Ù„ØµÙŠØ§Ù†Ø© Ø§Ù„Ù…ØªÙƒØ§Ù…Ù„Ø©
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.4
+  firebase_messaging: ^15.1.3
+
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  provider: ^6.1.2
+  shared_preferences: ^2.5.6
+
+  image_picker: ^1.2.4
+  permission_handler: ^11.3.1
+
+  intl: ^0.20.0
+  timezone: ^0.9.4
+  math_expressions: ^2.6.0
+  weather: ^3.1.1
+  flutter_local_notifications: ^17.2.3
+  http: ^1.2.2
+  
+  # âœ… Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ù…Ø³ØªÙ‚Ø± ÙˆØ§Ù„Ù…Ø¶Ù…ÙˆÙ† Ù„Ù…Ø§Ø³Ø­ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ (Ù„Ù…Ø²ÙˆØ¯ Ø§Ù„Ø®Ø¯Ù…Ø©)
+  mobile_scanner: ^5.2.3 
+  
+  # âœ… Ù…ÙƒØªØ¨Ø© ØªÙˆÙ„ÙŠØ¯ QR Code Ù„Ù„Ø¹Ù…Ù„Ø§Ø¡
+  qr_flutter: ^4.1.0
+
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
+  share_plus: ^13.3.1
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# App Icon Configuration
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"
+  adaptive_icon_foreground_inset: 0
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Splash Screen Configuration
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+flutter_native_splash:
+  color: "#0A0E1A"
+  image: "assets/images/splash.png"
+  android: true
+  ios: true
+  fullscreen: true
+  android_gravity: "fill"
+  android_12:
+    image: "assets/images/splash.png"
+    icon_background_color: "#0A0E1A"
+    fullscreen: true
+
+═══════════════════════════════════════════════════════════
+📂 هيكل المشروع (مجلد lib):
+═══════════════════════════════════════════════════════════
+lib\core (1 ملفات Dart)
+lib\managers (10 ملفات Dart)
+lib\models (20 ملفات Dart)
+lib\providers (9 ملفات Dart)
+lib\screens (6 ملفات Dart)
+lib\services (11 ملفات Dart)
+lib\utils (1 ملفات Dart)
+lib\core\constants (3 ملفات Dart)
+lib\core\theme (1 ملفات Dart)
+lib\core\utils (2 ملفات Dart)
+lib\core\widgets (14 ملفات Dart)
+lib\core\widgets\ads (5 ملفات Dart)
+lib\core\widgets\payments (4 ملفات Dart)
+lib\core\widgets\providers (2 ملفات Dart)
+lib\core\widgets\reviews (5 ملفات Dart)
+lib\screens\admin (2 ملفات Dart)
+lib\screens\auth (4 ملفات Dart)
+lib\screens\customer (35 ملفات Dart)
+lib\screens\driver (3 ملفات Dart)
+lib\screens\factory (0 ملفات Dart)
+lib\screens\home (1 ملفات Dart)
+lib\screens\marketplace (8 ملفات Dart)
+lib\screens\parts_provider (0 ملفات Dart)
+lib\screens\provider (14 ملفات Dart)
+lib\screens\settings (2 ملفات Dart)
+lib\screens\shared (2 ملفات Dart)
+lib\screens\station (7 ملفات Dart)
+lib\screens\tanker (2 ملفات Dart)
+lib\screens\technician (0 ملفات Dart)
+
+═══════════════════════════════════════════════════════════
+📄 جميع ملفات Dart في المشروع:
+═══════════════════════════════════════════════════════════
+lib\firebase_options.dart
+lib\main.dart
+lib\core\app.dart
+lib\core\constants\app_info.dart
+lib\core\constants\app_routes.dart
+lib\core\constants\app_strings.dart
+lib\core\theme\app_theme.dart
+lib\core\utils\helpers.dart
+lib\core\utils\validators.dart
+lib\core\widgets\app_drawer.dart
+lib\core\widgets\auth_gate.dart
+lib\core\widgets\coupon_balance_card.dart
+lib\core\widgets\coupon_info_dialog.dart
+lib\core\widgets\earnings_summary_card.dart
+lib\core\widgets\glass_widgets.dart
+lib\core\widgets\live_clock.dart
+lib\core\widgets\offer_ticker.dart
+lib\core\widgets\order_item_card.dart
+lib\core\widgets\products_scaffold.dart
+lib\core\widgets\quantity_sheet.dart
+lib\core\widgets\service_option_card.dart
+lib\core\widgets\smart_top_bar.dart
+lib\core\widgets\station_selector.dart
+lib\core\widgets\ads\ad_carousel_widget.dart
+lib\core\widgets\ads\ad_status_badge.dart
+lib\core\widgets\ads\ad_type_badge.dart
+lib\core\widgets\ads\geo_coverage_selector.dart
+lib\core\widgets\ads\price_plan_card.dart
+lib\core\widgets\payments\cash_receipt_widget.dart
+lib\core\widgets\payments\payment_option_card.dart
+lib\core\widgets\payments\payment_status_badge.dart
+lib\core\widgets\payments\wallet_balance_card.dart
+lib\core\widgets\providers\provider_bottom_nav.dart
+lib\core\widgets\providers\provider_stat_card.dart
+lib\core\widgets\reviews\emoji_feedback_widget.dart
+lib\core\widgets\reviews\review_item_card.dart
+lib\core\widgets\reviews\review_prompt_dialog.dart
+lib\core\widgets\reviews\review_summary_card.dart
+lib\core\widgets\reviews\star_rating_widget.dart
+lib\managers\advertisement_manager.dart
+lib\managers\auth_manager.dart
+lib\managers\cart_manager.dart
+lib\managers\dispatch_manager.dart
+lib\managers\payment_manager.dart
+lib\managers\profile_manager.dart
+lib\managers\providers_router.dart
+lib\managers\role_manager.dart
+lib\managers\supplier_manager.dart
+lib\managers\theme_manager.dart
+lib\models\advertisement_model.dart
+lib\models\cart_item.dart
+lib\models\comment_model.dart
+lib\models\coupon_model.dart
+lib\models\delivery_model.dart
+lib\models\driver_model.dart
+lib\models\offer_model.dart
+lib\models\order_model.dart
+lib\models\part_model.dart
+lib\models\payment_method_model.dart
+lib\models\product_model.dart
+lib\models\region_model.dart
+lib\models\review_model.dart
+lib\models\station_model.dart
+lib\models\subscription_model.dart
+lib\models\tanker_request_model.dart
+lib\models\technician_model.dart
+lib\models\transaction_model.dart
+lib\models\user_model.dart
+lib\models\water_catalog.dart
+lib\providers\auth_provider.dart
+lib\providers\cart_provider.dart
+lib\providers\customer_provider.dart
+lib\providers\driver_provider.dart
+lib\providers\marketplace_provider.dart
+lib\providers\offer_provider.dart
+lib\providers\provider_home.dart
+lib\providers\station_provider.dart
+lib\providers\subscription_provider.dart
+lib\screens\account_statement_screen.dart
+lib\screens\provider_home.dart
+lib\screens\qr_scanner_screen.dart
+lib\screens\role_selection_screen.dart
+lib\screens\splash_screen.dart
+lib\screens\welcome_screen.dart
+lib\screens\admin\admin_dashboard_screen.dart
+lib\screens\admin\super_admin_dashboard.dart
+lib\screens\auth\login_screen.dart
+lib\screens\auth\otp_verification_screen.dart
+lib\screens\auth\provider_register_screen.dart
+lib\screens\auth\register_screen.dart
+lib\screens\customer\about_screen.dart
+lib\screens\customer\app_review_screen.dart
+lib\screens\customer\calculator_screen.dart
+lib\screens\customer\cart_screen.dart
+lib\screens\customer\checkout_screen.dart
+lib\screens\customer\customer_home.dart
+lib\screens\customer\customer_id_screen.dart
+lib\screens\customer\customer_map_screen.dart
+lib\screens\customer\customer_qr_screen.dart
+lib\screens\customer\customer_review_screen.dart
+lib\screens\customer\drinking_water.dart
+lib\screens\customer\gas_screen.dart
+lib\screens\customer\home_refill_screen.dart
+lib\screens\customer\maintenance_request.dart
+lib\screens\customer\maintenance_screen.dart
+lib\screens\customer\map_picker_screen.dart
+lib\screens\customer\marketplace_screen.dart
+lib\screens\customer\my_coupons_screen.dart
+lib\screens\customer\my_reviews_screen.dart
+lib\screens\customer\offers_screen.dart
+lib\screens\customer\order_confirmation_screen.dart
+lib\screens\customer\parts_store_screen.dart
+lib\screens\customer\payment_history_screen.dart
+lib\screens\customer\payment_method_screen.dart
+lib\screens\customer\payment_options_dialog.dart
+lib\screens\customer\referral_screen.dart
+lib\screens\customer\subscriptions_screen.dart
+lib\screens\customer\supplier_selection_screen.dart
+lib\screens\customer\support_screen.dart
+lib\screens\customer\tanker_request_screen.dart
+lib\screens\customer\tank_order_screen.dart
+lib\screens\customer\tank_screen.dart
+lib\screens\customer\terms_screen.dart
+lib\screens\customer\wallet_screen.dart
+lib\screens\customer\water_order_screen.dart
+lib\screens\driver\delivery_requests.dart
+lib\screens\driver\driver_home.dart
+lib\screens\driver\earnings_screen.dart
+lib\screens\home\home_screen.dart
+lib\screens\marketplace\add_machine_listing.dart
+lib\screens\marketplace\ad_details_dialog.dart
+lib\screens\marketplace\ad_details_screen.dart
+lib\screens\marketplace\filters_marketplace.dart
+lib\screens\marketplace\machine_details.dart
+lib\screens\marketplace\marketplace_home.dart
+lib\screens\marketplace\technicians_list_screen.dart
+lib\screens\marketplace\technician_profile_screen.dart
+lib\screens\provider\ad_stats_screen.dart
+lib\screens\provider\create_ad_screen.dart
+lib\screens\provider\my_ads_screen.dart
+lib\screens\provider\provider_change_password_screen.dart
+lib\screens\provider\provider_home_screen.dart
+lib\screens\provider\provider_notifications_screen.dart
+lib\screens\provider\provider_orders_screen.dart
+lib\screens\provider\provider_profile_screen.dart
+lib\screens\provider\provider_review_screen.dart
+lib\screens\provider\provider_stats_screen.dart
+lib\screens\provider\provider_type.dart
+lib\screens\provider\provider_wallet_screen.dart
+lib\screens\provider\qr_scanner_screen.dart
+lib\screens\provider\qr_tools_screen.dart
+lib\screens\settings\customize_screen.dart
+lib\screens\settings\profile_settings_screen.dart
+lib\screens\shared\placeholder_screen.dart
+lib\screens\shared\review_success_screen.dart
+lib\screens\station\accounting_ledger.dart
+lib\screens\station\drivers_management.dart
+lib\screens\station\incoming_orders.dart
+lib\screens\station\qr_scanner_screen.dart
+lib\screens\station\station_dashboard.dart
+lib\screens\station\station_maintenance.dart
+lib\screens\station\station_prices_screen.dart
+lib\screens\tanker\tanker_home.dart
+lib\screens\tanker\tanker_settings.dart
+lib\services\advertisement_service.dart
+lib\services\auth_service.dart
+lib\services\driver_service.dart
+lib\services\firebase_service.dart
+lib\services\location_service.dart
+lib\services\notification_service.dart
+lib\services\order_service.dart
+lib\services\payment_service.dart
+lib\services\qr_service.dart
+lib\services\review_service.dart
+lib\services\weather_service.dart
+lib\utils\distance_calculator.dart
+
+إجمالي ملفات Dart: 176
+
+═══════════════════════════════════════════════════════════
+🔬 تحليل الملفات الرئيسية (الـ imports والـ classes):
+═══════════════════════════════════════════════════════════
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/main.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:qatorah_app/screens/splash_screen.dart';
+import 'package:qatorah_app/firebase_options.dart';
+import 'package:qatorah_app/managers/profile_manager.dart';
+import 'package:qatorah_app/managers/advertisement_manager.dart'; // ✅ جديد
+
+🏗️  الـ Classes:
+class QatorahApp extends StatelessWidget {
+
+📊 عدد الأسطر: 64
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/core/theme/app_theme.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/material.dart';
+
+🏗️  الـ Classes:
+class AppColors {
+class AppGradients {
+
+📊 عدد الأسطر: 64
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/managers/auth_manager.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/foundation.dart';
+
+🏗️  الـ Classes:
+class AuthManager extends ChangeNotifier {
+
+📊 عدد الأسطر: 143
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/managers/advertisement_manager.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/foundation.dart';
+import '../models/advertisement_model.dart';
+import '../models/comment_model.dart';
+import '../models/region_model.dart';
+import '../services/advertisement_service.dart';
+import 'auth_manager.dart';
+
+🏗️  الـ Classes:
+class AdvertisementManager extends ChangeNotifier {
+
+📊 عدد الأسطر: 383
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/managers/payment_manager.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/foundation.dart';
+import 'package:qatorah_app/models/transaction_model.dart';
+
+🏗️  الـ Classes:
+class PaymentManager extends ChangeNotifier {
+
+📊 عدد الأسطر: 99
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/models/advertisement_model.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'region_model.dart';
+
+🏗️  الـ Classes:
+class AdLimits {
+class PublisherInfo {
+class AdPricing {
+class AdDuration {
+class AdModeration {
+
+📊 عدد الأسطر: 477
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/models/transaction_model.dart
+───────────────────────────────────────────────────────
+
+🏗️  الـ Classes:
+class TransactionModel {
+
+📊 عدد الأسطر: 63
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/screens/admin/admin_dashboard_screen.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qatorah_app/core/theme/app_theme.dart';
+import 'package:qatorah_app/managers/advertisement_manager.dart';
+import 'package:qatorah_app/managers/auth_manager.dart';
+import 'package:qatorah_app/models/advertisement_model.dart';
+
+🏗️  الـ Classes:
+class AdminDashboardScreen extends StatefulWidget {
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+class _OverviewTab extends StatelessWidget {
+class _ApprovalsTab extends StatelessWidget {
+class _AccountingTab extends StatefulWidget {
+
+📊 عدد الأسطر: 981
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/screens/customer/wallet_screen.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qatorah_app/core/theme/app_theme.dart';
+import 'package:qatorah_app/core/widgets/payments/wallet_balance_card.dart';
+import 'package:qatorah_app/core/widgets/payments/payment_status_badge.dart';
+import 'package:qatorah_app/managers/payment_manager.dart';
+import 'package:qatorah_app/models/transaction_model.dart';
+import 'package:intl/intl.dart';
+
+🏗️  الـ Classes:
+class WalletScreen extends StatelessWidget {
+
+📊 عدد الأسطر: 174
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/screens/customer/customer_home.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qatorah_app/core/theme/app_theme.dart';
+import 'package:qatorah_app/core/widgets/ads/ad_carousel_widget.dart';
+import 'package:qatorah_app/core/widgets/app_drawer.dart';
+import 'package:qatorah_app/core/widgets/auth_gate.dart';
+import 'package:qatorah_app/core/widgets/glass_widgets.dart';
+import 'package:qatorah_app/core/widgets/smart_top_bar.dart';
+import 'package:qatorah_app/managers/advertisement_manager.dart';
+import 'package:qatorah_app/managers/auth_manager.dart';
+
+🏗️  الـ Classes:
+class CustomerHomeScreen extends StatefulWidget {
+class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+class _SpringTile extends StatefulWidget {
+class _SpringTileState extends State<_SpringTile>
+
+📊 عدد الأسطر: 356
+
+───────────────────────────────────────────────────────
+📄 ملف: lib/core/widgets/app_drawer.dart
+───────────────────────────────────────────────────────
+📥 الـ Imports:
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qatorah_app/core/theme/app_theme.dart';
+import 'package:qatorah_app/managers/auth_manager.dart';
+import 'package:qatorah_app/managers/cart_manager.dart';
+import 'package:qatorah_app/managers/theme_manager.dart';
+import 'package:qatorah_app/managers/profile_manager.dart';
+import 'package:qatorah_app/screens/customer/cart_screen.dart';
+import 'package:qatorah_app/screens/customer/support_screen.dart';
+
+🏗️  الـ Classes:
+class AppDrawer extends StatefulWidget {
+class _AppDrawerState extends State<AppDrawer> {
+
+📊 عدد الأسطر: 491
+
+═══════════════════════════════════════════════════════════
+📊 إحصائيات المشروع:
+═══════════════════════════════════════════════════════════
+• إجمالي ملفات Dart: 176
+• إجمالي أسطر الكود: 23496
+• إجمالي المجلدات: 29
+

@@ -2,10 +2,11 @@ import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class AIMaintenanceService {
-  static const String _apiKey = 'AIzaSyAbzSPcycWZC_OnmP-xuGBS7jK1ixQySQI';
+  // flutter run --dart-define=GEMINI_API_KEY=your_key
+  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
 
   static final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     apiKey: _apiKey,
   );
 
@@ -13,6 +14,9 @@ class AIMaintenanceService {
     required File? imageFile,
     required String textDescription,
   }) async {
+    if (_apiKey.isEmpty) {
+      return "الذكاء الاصطناعي غير مُهيأ: مفتاح GEMINI_API_KEY غير موجود.";
+    }
     try {
       final prompt = TextPart('''
 أنت "مساعد قطوره الذكي"، مختص حصراً بصيانة الفلاتر، المحطات المائية، والأعطال المنزلية المتعلقة بالمياه والسباكة.

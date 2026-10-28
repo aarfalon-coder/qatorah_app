@@ -33,13 +33,13 @@ class _CustomerMapScreenState extends State<CustomerMapScreen> {
     try {
       Position? position = await LocationService.getCurrentPosition();
 
+      if (!mounted) return;
       setState(() {
         _currentPosition = LatLng(position.latitude, position.longitude);
         _isLoading = false;
       });
-
-      _mapController.move(_currentPosition!, 15.0);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'خطأ: $e';
         _isLoading = false;

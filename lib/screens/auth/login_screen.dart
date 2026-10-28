@@ -59,6 +59,38 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _phoneCtrl.text.trim().toLowerCase();
+    if (!email.contains('@')) {
+      _showErrorMessage(
+          'أدخل بريدك الإلكتروني في الحقل أعلاه أولاً. المستخدمون برقم الهاتف يدخلون عبر رمز التحقق.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'إذا كان البريد مسجلاً، سيصلك رابط إعادة تعيين كلمة المرور.'),
+          backgroundColor: AppColors.refillGreen,
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      _showErrorMessage(e.code == 'invalid-email'
+          ? 'صيغة البريد الإلكتروني غير صحيحة.'
+          : e.code == 'too-many-requests'
+              ? 'محاولات كثيرة. حاول لاحقاً.'
+              : e.code == 'network-request-failed'
+                  ? 'تحقق من اتصال الإنترنت.'
+                  : 'تعذر إرسال رابط إعادة التعيين. حاول مرة أخرى.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleAdminLoginByEmail(String email, String password) async {
     var firebaseSignedIn = false;
     var sessionEstablished = false;
@@ -473,7 +505,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton(
+                      onPressed: _isLoading ? null : _resetPassword,
+                      child: const Text('نسيت كلمة المرور؟',
+                          style: TextStyle(color: AppColors.goldLight)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   GoldButton(
                     text: _isLoading ? 'جاري الدخول...' : 'تسجيل الدخول',
                     icon: Icons.login,

@@ -60,14 +60,16 @@ class _GasScreenState extends State<GasScreen> {
         pos.latitude,
         pos.longitude,
       );
+      if (!mounted) return;
       setState(() {
         _currentLocation = LatLng(pos.latitude, pos.longitude);
         _currentAddress = addr;
         _isLoading = false;
       });
-      _mapController.move(_currentLocation, 16.0);
       _generateNearbyTrucks();
     } catch (e) {
+      debugPrint('تعذر تحديد الموقع: $e');
+      if (!mounted) return;
       setState(() {
         _currentAddress = 'تعذر تحديد الموقع - حرك الخريطة';
         _isLoading = false;

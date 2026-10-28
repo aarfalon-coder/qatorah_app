@@ -65,9 +65,10 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
         _currentAddress = addr;
         _isLoading = false;
       });
-      _mapController.move(_currentLocation, 16.0);
       _generateNearbyTrucks();
     } catch (e) {
+      debugPrint('تعذر تحديد الموقع: $e');
+      if (!mounted) return;
       setState(() {
         _currentAddress = 'تعذر تحديد الموقع - يرجى تحريك الخريطة';
         _isLoading = false;

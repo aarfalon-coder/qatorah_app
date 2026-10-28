@@ -40,8 +40,9 @@ class _HomeRefillScreenState extends State<HomeRefillScreen> {
         _currentAddress = addr;
         _isLoading = false;
       });
-      _mapController.move(_currentLocation, 16.0);
     } catch (e) {
+      debugPrint('تعذر تحديد الموقع: $e');
+      if (!mounted) return;
       setState(() {
         _currentAddress = 'تعذر تحديد الموقع - يرجى تحريك الخريطة';
         _isLoading = false;

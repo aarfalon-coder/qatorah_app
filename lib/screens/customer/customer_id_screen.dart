@@ -23,7 +23,8 @@ class CustomerIdScreen extends StatefulWidget {
 class _CustomerIdScreenState extends State<CustomerIdScreen> {
   final PaymentService _paymentService = PaymentService();
 
-  final double _currentBalance = 45.50;
+  double _currentBalance = 0.0;
+  String _userId = '';
 
   List<Map<String, dynamic>> _pendingOrders = [];
   bool _isLoadingOrders = true;
@@ -40,39 +41,67 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
     _fetchPendingOrders();
   }
 
+  Future<String> _resolveUserId() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isNotEmpty) return uid;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id') ??
+        prefs.getString('uid') ??
+        prefs.getString('userId') ??
+        '';
+  }
+
   Future<void> _fetchPendingOrders() async {
     setState(() => _isLoadingOrders = true);
     try {
-      String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final userId = await _resolveUserId();
+      if (!mounted) return;
+      _userId = userId;
+
       if (userId.isEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        userId = prefs.getString('user_id') ??
-            prefs.getString('uid') ??
-            prefs.getString('userId') ??
-            '';
+        setState(() => _isLoadingOrders = false);
+        return;
       }
 
-      if (userId.isNotEmpty) {
-        final snapshot = await FirebaseFirestore.instance
+      final db = FirebaseFirestore.instance;
+      final results = await Future.wait([
+        db
             .collection('orders')
             .where('customerId', isEqualTo: userId)
             .where('status', isEqualTo: 'pending')
-            .get();
+            .get(),
+        db.collection('users').doc(userId).get(),
+      ]);
+      if (!mounted) return;
 
-        setState(() {
-          _pendingOrders = snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return data;
-          }).toList();
-          _isLoadingOrders = false;
-        });
-      } else {
-        setState(() => _isLoadingOrders = false);
-      }
+      final orders = results[0] as QuerySnapshot<Map<String, dynamic>>;
+      final userDoc = results[1] as DocumentSnapshot<Map<String, dynamic>>;
+      
+      // ✅ إصلاح: تحويل البيانات بشكل آمن
+      final userData = userDoc.data();
+      final walletBalance = userData?['walletBalance'];
+      
+      setState(() {
+        _pendingOrders = orders.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        
+        // ✅ إصلاح: معالجة آمنة للرصيد
+        if (walletBalance is num) {
+          _currentBalance = walletBalance.toDouble();
+        } else if (walletBalance is String) {
+          _currentBalance = double.tryParse(walletBalance) ?? 0.0;
+        } else {
+          _currentBalance = 0.0;
+        }
+        
+        _isLoadingOrders = false;
+      });
     } catch (e) {
-      debugPrint('خطأ في جلب الطلبات المعلقة: $e');
-      setState(() => _isLoadingOrders = false);
+      debugPrint('خطأ في جلب بيانات الحساب: $e');
+      if (mounted) setState(() => _isLoadingOrders = false);
     }
   }
 
@@ -169,11 +198,15 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
   }
 
   Widget _buildPendingOrderCard(Map<String, dynamic> order) {
-    final String serviceType = order['serviceType'] ?? 'خدمة';
-    final double amount =
-        (order['totalAmount'] ?? order['amount'] ?? 0.0).toDouble();
-    final String details = order['details'] ??
+    // ✅ إصلاح: تحويل آمن للبيانات
+    final String serviceType = (order['serviceType'] ?? 'خدمة').toString();
+    final amountValue = order['totalAmount'] ?? order['amount'] ?? 0;
+    final double amount = amountValue is num 
+        ? amountValue.toDouble() 
+        : double.tryParse(amountValue.toString()) ?? 0.0;
+    final detailsValue = order['details'] ?? 
         (order['quantity'] != null ? '${order['quantity']} وحدة' : '');
+    final String details = detailsValue?.toString() ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -342,13 +375,9 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
       {String? orderId}) async {
     setState(() => _isGeneratingQr = true);
     try {
-      String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final userId = await _resolveUserId();
       if (userId.isEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        userId = prefs.getString('user_id') ??
-            prefs.getString('uid') ??
-            prefs.getString('userId') ??
-            'user_${DateTime.now().millisecondsSinceEpoch}';
+        throw Exception('يرجى تسجيل الدخول أولاً');
       }
 
       final requestId = await _paymentService.createPaymentRequest(
@@ -403,6 +432,12 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
     return Consumer<ProfileManager>(
       builder: (context, profile, child) {
         final isPaymentMode = _paymentQrData != null;
+        
+        // ✅ إصلاح: تحويل آمن للبيانات
+        final String profileName = profile.name.isNotEmpty 
+            ? profile.name.toString() 
+            : 'عميل قطره';
+        
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -446,10 +481,7 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
                     child: const Icon(Icons.person,
                         color: Colors.white, size: 40)),
                 const SizedBox(height: 16),
-                Text(
-                    profile.name.isNotEmpty
-                        ? profile.name
-                        : 'QASIM ABU AL-BARA',
+                Text(profileName,
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -461,14 +493,17 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
                     decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8)),
-                    child: const Text('ID: 8B-2024-JO',
-                        style: TextStyle(
+                    child: Text(
+                        'ID: ${_userId.length > 8 ? _userId.substring(0, 8).toUpperCase() : _userId}',
+                        style: const TextStyle(
                             color: AppColors.goldLight,
                             fontWeight: FontWeight.bold))),
                 const SizedBox(height: 20),
               ],
               GestureDetector(
-                onTap: isPaymentMode ? null : () {/* Dialog logic */},
+                onTap: isPaymentMode
+                    ? null
+                    : () => _showEnlargedQr('QATORAH|$_userId|$profileName'),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -488,7 +523,7 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
                       : QrImageView(
                           data: isPaymentMode
                               ? _paymentQrData!
-                              : 'QATORAH|CUST-1001|${profile.name}',
+                              : 'QATORAH|$_userId|$profileName',
                           version: QrVersions.auto,
                           size: isPaymentMode ? 220.0 : 120.0,
                           backgroundColor: Colors.white),
@@ -519,9 +554,14 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
                         child: ElevatedButton.icon(
                             onPressed: () async {
                               if (_currentRequestId != null) {
-                                await _paymentService
-                                    .cancelPaymentRequest(_currentRequestId!);
+                                try {
+                                  await _paymentService
+                                      .cancelPaymentRequest(_currentRequestId!);
+                                } catch (e) {
+                                  debugPrint('فشل إلغاء طلب الدفع: $e');
+                                }
                               }
+                              if (!mounted) return;
                               setState(() {
                                 _paymentQrData = null;
                                 _paymentServiceName = null;
@@ -544,6 +584,23 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
     );
   }
 
+  void _showEnlargedQr(String data) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: QrImageView(
+              data: data,
+              version: QrVersions.auto,
+              size: 280,
+              backgroundColor: Colors.white),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader() =>
       const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text('حسابي',
@@ -553,34 +610,41 @@ class _CustomerIdScreenState extends State<CustomerIdScreen> {
 
   Widget _buildProfileSection() {
     return Consumer<ProfileManager>(
-        builder: (context, profile, child) => Row(children: [
-              Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.goldLight, width: 2)),
-                  child:
-                      const Icon(Icons.person, color: Colors.white, size: 30)),
-              const SizedBox(width: 16),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(
-                        profile.name.isNotEmpty
-                            ? profile.name
-                            : 'قاسم أبو البراء',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(profile.email.isNotEmpty ? profile.email : 'عميل مميز',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
-                  ])),
-            ]));
+        builder: (context, profile, child) {
+          // ✅ إصلاح: تحويل آمن للبيانات
+          final String profileName = profile.name.isNotEmpty 
+              ? profile.name.toString() 
+              : 'عميل قطره';
+          final String profileEmail = profile.email.isNotEmpty 
+              ? profile.email.toString() 
+              : 'عميل مميز';
+              
+          return Row(children: [
+            Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.goldLight, width: 2)),
+                child:
+                    const Icon(Icons.person, color: Colors.white, size: 30)),
+            const SizedBox(width: 16),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(profileName,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(profileEmail,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 12)),
+                ])),
+          ]);
+        });
   }
 
   Widget _buildBalanceCard() {

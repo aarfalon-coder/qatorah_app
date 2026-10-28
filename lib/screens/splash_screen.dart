@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qatorah_app/core/constants/app_info.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
 import 'package:qatorah_app/screens/auth/login_screen.dart';
@@ -14,22 +13,10 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulse;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 1.0, end: 1.06).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
-
     _init();
   }
 
@@ -79,83 +66,31 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppGradients.welcomeBackground,
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ScaleTransition(
-                scale: _pulse,
-                child: Container(
-                  width: 320,
-                  height: 320,
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.goldDark.withValues(alpha: 0.5),
-                        blurRadius: 60,
-                        spreadRadius: 8,
-                      ),
-                      BoxShadow(
-                        color: AppColors.crystalBlue.withValues(alpha: 0.4),
-                        blurRadius: 80,
-                        spreadRadius: 15,
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.water_drop,
-                        size: 180,
-                        color: Colors.white,
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ShaderMask(
-                shaderCallback: (bounds) =>
-                    AppGradients.goldGradient.createShader(bounds),
-                child: const Text(
-                  AppInfo.appName,
-                  style: TextStyle(
-                    fontSize: 46,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                AppInfo.tagline,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 35),
-              const CircularProgressIndicator(
+      backgroundColor: const Color(0xFF0A0E1A),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/splash.png',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => const Center(
+              child: Icon(Icons.water_drop, size: 180, color: Colors.white),
+            ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 60,
+            child: Center(
+              child: CircularProgressIndicator(
                 color: AppColors.goldLight,
                 strokeWidth: 3,
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

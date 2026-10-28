@@ -37,7 +37,7 @@ class _StartupScreenState extends State<StartupScreen> {
               ad: ad,
               onFinished: () {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => CustomerHomeScreen()),
+                  MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
                 );
               },
             ),
@@ -46,14 +46,14 @@ class _StartupScreenState extends State<StartupScreen> {
       } else {
         debugPrint('🚀 === STARTUP: لا يوجد إعلان، انتقال مباشر للشاشة الرئيسية ===');
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => CustomerHomeScreen()),
+          MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
         );
       }
     } catch (e) {
       debugPrint('❌ === STARTUP: حدث خطأ أثناء الفحص: $e ===');
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => CustomerHomeScreen()),
+          MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
         );
       }
     }

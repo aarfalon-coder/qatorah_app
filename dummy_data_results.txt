@@ -1,0 +1,146 @@
+﻿C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\constants\app_info.dart : سطر 21 ==> // بيانات تجريبية للمستخدم (تُستبدل بالحساب الحقيقي لاحقاً)
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\utils\helpers.dart : سطر 50 ==> if (number >= 1000000) {
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\utils\helpers.dart : سطر 51 ==> return '${(number / 1000000).toStringAsFixed(1)}M';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\utils\helpers.dart : سطر 162 ==> final random = (timestamp % 10000).toString().padLeft(4, '0');
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\utils\validators.dart : سطر 25 ==> return 'رقم هاتف غير صالح (مثال: 0791234567)';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\utils\validators.dart : سطر 145 ==> if (price > 10000) {
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\app_drawer.dart : سطر 29 ==> State<AppDrawer> createState() => _AppDrawerState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\live_clock.dart : سطر 12 ==> State<LiveStatusBar> createState() => _LiveStatusBarState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\live_clock.dart : سطر 131 ==> // ✅ الحل الجذري: HitTestBehavior.opaque لضمان استجابة الضغط
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\live_clock.dart : سطر 133 ==> behavior: HitTestBehavior.opaque,
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\live_clock.dart : سطر 250 ==> State<_WeatherDetailsSheet> createState() => _WeatherDetailsSheetState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\live_clock.dart : سطر 483 ==> behavior: HitTestBehavior.opaque,
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\offer_ticker.dart : سطر 13 ==> State<OfferTicker> createState() => _OfferTickerState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\smart_top_bar.dart : سطر 13 ==> State<SmartTopBar> createState() => _SmartTopBarState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\smart_top_bar.dart : سطر 109 ==> behavior: HitTestBehavior.opaque,
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\smart_top_bar.dart : سطر 236 ==> State<InfiniteMarquee> createState() => _InfiniteMarqueeState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\smart_top_bar.dart : سطر 433 ==> behavior: HitTestBehavior.opaque,
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\unified_scanner_screen.dart : سطر 20 ==> State<UnifiedScannerScreen> createState() => _UnifiedScannerScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\ads\ad_carousel_widget.dart : سطر 31 ==> State<AdCarouselWidget> createState() => _AdCarouselWidgetState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\core\widgets\reviews\review_prompt_dialog.dart : سطر 18 ==> State<ReviewPromptDialog> createState() => _ReviewPromptDialogState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\auth_manager.dart : سطر 162 ==> phone = '000000000';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 10 ==> // FirebaseService ????? ?????? - ?????? Mock
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 12 ==> // ═══ البيانات المحلية (Mock - لاحقاً من Firestore) ═══
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 47 ==> // ═══ تحميل كوبوناتي (Mock) ═══
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 54 ==> // الآن: بيانات تجريبية
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 56 ==> _myBooks.addAll(_mockBooks());
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 217 ==> // ═══ بيانات تجريبية (Mock) ═══
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\coupon_manager.dart : سطر 218 ==> List<CouponBookModel> _mockBooks() {
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\payment_manager.dart : سطر 14 ==> _seedMockData(); // تحميل بيانات وهمية للتجربة
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\payment_manager.dart : سطر 17 ==> void _seedMockData() {
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\profile_manager.dart : سطر 13 ==> // ═══ متغيرات بدون قيم وهمية ═══
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\managers\profile_manager.dart : سطر 36 ==> //    وإلا → نص فارغ (لا توجد قيم وهمية أبداً)
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\models\splash_ad_model.dart : سطر 68 ==> this.maxImpressions = 10000,
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\models\splash_ad_model.dart : سطر 128 ==> maxImpressions: map['maxImpressions'] ?? 10000,
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\auth_provider.dart : سطر 116 ==> phone: '000000000',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\marketplace_provider.dart : سطر 14 ==> String _sortBy = 'latest';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\marketplace_provider.dart : سطر 131 ==> _sortBy = 'latest';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\provider_home.dart : سطر 9 ==> // ✅ تم إضافة هذا السطر لإصلاح خطأ kMockProviderId غير معرف
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\provider_home.dart : سطر 10 ==> const String kMockProviderId = "mock_provider_123";
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\provider_home.dart : سطر 16 ==> State<ProviderHomeScreen> createState() => _ProviderHomeScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\provider_home.dart : سطر 72 ==> final myAds = mgr.allAds.where((a) => a.publisher.userId == kMockProviderId).toList();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\provider_home.dart : سطر 351 ==> State<_OrdersTab> createState() => _OrdersTabState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\providers\provider_home.dart : سطر 697 ==> AuthManager.phone.isNotEmpty ? AuthManager.phone : '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\account_statement_screen.dart : سطر 9 ==> State<AccountStatementScreen> createState() => _AccountStatementScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\account_statement_screen.dart : سطر 16 ==> // بيانات تجريبية للعميل
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\account_statement_screen.dart : سطر 26 ==> // بيانات تجريبية لمزود الخدمة
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider_home.dart : سطر 17 ==> State<ProviderHomeScreen> createState() => _ProviderHomeScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider_home.dart : سطر 592 ==> State<_OrdersTab> createState() => _OrdersTabState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider_home.dart : سطر 755 ==> onPressed: () => _showUpdateStatusDialog(context, order),
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider_home.dart : سطر 814 ==> void _showUpdateStatusDialog(BuildContext context, Map<String, dynamic> order) {
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider_home.dart : سطر 1062 ==> AuthManager.phone.isNotEmpty ? AuthManager.phone : '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\splash_screen.dart : سطر 14 ==> State<SplashScreen> createState() => _SplashScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\admin_bank_settings_screen.dart : سطر 9 ==> State<AdminBankSettingsScreen> createState() => _AdminBankSettingsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\admin_dashboard_screen.dart : سطر 20 ==> State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\admin_manual_topup_screen.dart : سطر 9 ==> State<AdminManualTopupScreen> createState() => _AdminManualTopupScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\super_admin_dashboard.dart : سطر 20 ==> State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\splash_ads\create_splash_ad_screen.dart : سطر 16 ==> State<CreateSplashAdScreen> createState() => _CreateSplashAdScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\splash_ads\splash_ads_management_screen.dart : سطر 11 ==> State<SplashAdsManagementScreen> createState() => _SplashAdsManagementScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\tabs\admin_ads_tab.dart : سطر 10 ==> State<AdminAdsTab> createState() => _AdminAdsTabState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\tabs\admin_notifications_tab.dart : سطر 10 ==> State<AdminNotificationsTab> createState() => _AdminNotificationsTabState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\admin\tabs\admin_stations_tab.dart : سطر 9 ==> State<AdminStationsTab> createState() => _AdminStationsTabState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\ads\splash_ad_screen.dart : سطر 17 ==> State<SplashAdScreen> createState() => _SplashAdScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\ads\startup_screen.dart : سطر 12 ==> State<StartupScreen> createState() => _StartupScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\auth\login_screen.dart : سطر 16 ==> State<LoginScreen> createState() => _LoginScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\auth\login_screen.dart : سطر 372 ==> hintText: '0791234567 أو admin@example.com',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\auth\otp_verification_screen.dart : سطر 28 ==> State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\auth\provider_register_screen.dart : سطر 14 ==> State<ProviderRegisterScreen> createState() => _ProviderRegisterScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\auth\register_screen.dart : سطر 15 ==> State<RegisterScreen> createState() => _RegisterScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\app_review_screen.dart : سطر 9 ==> State<AppReviewScreen> createState() => _AppReviewScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\app_review_screen.dart : سطر 192 ==> hintText: 'example@email.com',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\calculator_screen.dart : سطر 8 ==> State<CalculatorScreen> createState() => _CalculatorScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\cart_screen.dart : سطر 11 ==> State<CartScreen> createState() => _CartScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\checkout_screen.dart : سطر 16 ==> State<CheckoutScreen> createState() => _CheckoutScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\checkout_screen.dart : سطر 147 ==> customerName: 'عميل تجريبي',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\checkout_screen.dart : سطر 148 ==> customerPhone: '0790000000',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_home.dart : سطر 34 ==> State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_home.dart : سطر 203 ==> Text('0791234567', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_home.dart : سطر 520 ==> State<_SpringTile> createState() => _SpringTileState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_id_screen.dart : سطر 21 ==> State<CustomerIdScreen> createState() => _CustomerIdScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_map_screen.dart : سطر 12 ==> State<CustomerMapScreen> createState() => _CustomerMapScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_map_screen.dart : سطر 92 ==> userAgentPackageName: 'com.example.qatorah',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_qr_screen.dart : سطر 12 ==> State<CustomerQrScreen> createState() => _CustomerQrScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\customer_review_screen.dart : سطر 21 ==> State<CustomerReviewScreen> createState() => _CustomerReviewScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\drinking_water.dart : سطر 10 ==> State<DrinkingWaterScreen> createState() => _DrinkingWaterScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\gas_screen.dart : سطر 15 ==> State<GasScreen> createState() => _GasScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\gas_screen.dart : سطر 34 ==> 'phone': '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\gas_screen.dart : سطر 131 ==> customerName: 'عميل تجريبي',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\gas_screen.dart : سطر 132 ==> customerPhone: '0790000000',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\gas_screen.dart : سطر 209 ==> userAgentPackageName: 'com.example.qatorah',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\home_refill_screen.dart : سطر 15 ==> State<HomeRefillScreen> createState() => _HomeRefillScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\home_refill_screen.dart : سطر 29 ==> 'phone': '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\home_refill_screen.dart : سطر 134 ==> customerName: 'عميل تجريبي',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\home_refill_screen.dart : سطر 135 ==> customerPhone: '0790000000',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\home_refill_screen.dart : سطر 215 ==> userAgentPackageName: 'com.example.qatorah',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\maintenance_request.dart : سطر 8 ==> State<MaintenanceRequestScreen> createState() => _MaintenanceRequestScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\maintenance_screen.dart : سطر 10 ==> State<MaintenanceScreen> createState() => _MaintenanceScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\map_picker_screen.dart : سطر 12 ==> State<MapPickerScreen> createState() => _MapPickerScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\map_picker_screen.dart : سطر 98 ==> userAgentPackageName: 'com.example.qatorah',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\marketplace_screen.dart : سطر 15 ==> State<MarketplaceScreen> createState() => _MarketplaceScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\my_coupons_screen.dart : سطر 13 ==> State<MyCouponsScreen> createState() => _MyCouponsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\my_reviews_screen.dart : سطر 11 ==> State<MyReviewsScreen> createState() => _MyReviewsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\notifications_screen.dart : سطر 11 ==> State<NotificationsScreen> createState() => _NotificationsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\payment_history_screen.dart : سطر 8 ==> // بيانات تجريبية
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\payment_method_screen.dart : سطر 17 ==> State<PaymentMethodScreen> createState() => _PaymentMethodScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\referral_screen.dart : سطر 11 ==> State<ReferralScreen> createState() => _ReferralScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\supplier_selection_screen.dart : سطر 16 ==> State<SupplierSelectionScreen> createState() => _SupplierSelectionScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\support_screen.dart : سطر 11 ==> State<SupportScreen> createState() => _SupportScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\tanker_request_screen.dart : سطر 8 ==> State<TankerRequestScreen> createState() => _TankerRequestScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\tank_order_screen.dart : سطر 22 ==> State<TankOrderScreen> createState() => _TankOrderScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\tank_order_screen.dart : سطر 35 ==> 'phone': '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\tank_order_screen.dart : سطر 138 ==> customerName: 'عميل تجريبي',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\tank_order_screen.dart : سطر 139 ==> customerPhone: '0790000000',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\tank_order_screen.dart : سطر 216 ==> userAgentPackageName: 'com.example.qatorah',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\terms_screen.dart : سطر 31 ==> 'body': 'لكل مستخدم كود دعوة خاص، وتُحتسب الدعوة ناجحة فقط بعد إتمام المدعو أول طلب مدفوع.\nالمكافآت (دفتر كوبونات مجاني، رصيد، إعلانات) تُصرف مرة واحدة لكل مستوى.\nيحق للإدارة إلغاء أي دعوات وهمية أو مكررة وحجب المكافآت المرتبطة بها دون إشعار مسبق.',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\wallet_screen.dart : سطر 16 ==> State<WalletScreen> createState() => _WalletScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\wallet_screen.dart : سطر 533 ==> final accountNumber = snapshot.hasData && snapshot.data!.exists ? (snapshot.data!['accountNumber'] ?? '12345678901234') : '12345678901234';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\wallet_screen.dart : سطر 535 ==> final iban = snapshot.hasData && snapshot.data!.exists ? (snapshot.data!['iban'] ?? 'JO94CBJO0010000000001234567890') : 'JO94CBJO0010000000001234567890';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\customer\water_order_screen.dart : سطر 9 ==> State<WaterOrderScreen> createState() => _WaterOrderScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\add_machine_listing.dart : سطر 8 ==> State<AddMachineListingScreen> createState() => _AddMachineListingScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\ad_details_dialog.dart : سطر 23 ==> State<AdDetailsDialog> createState() => _AdDetailsDialogState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\ad_details_screen.dart : سطر 16 ==> State<AdDetailsScreen> createState() => _AdDetailsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\filters_marketplace.dart : سطر 8 ==> State<FiltersMarketplaceScreen> createState() => _FiltersMarketplaceScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\marketplace_home.dart : سطر 18 ==> State<MarketplaceHomeScreen> createState() => _MarketplaceHomeScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\technicians_list_screen.dart : سطر 14 ==> 'phone': '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\technicians_list_screen.dart : سطر 23 ==> 'phone': '0781234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\technicians_list_screen.dart : سطر 32 ==> 'phone': '0771234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\marketplace\technicians_list_screen.dart : سطر 41 ==> 'phone': '0761234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\create_ad_screen.dart : سطر 17 ==> State<CreateAdScreen> createState() => _CreateAdScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\provider_change_password_screen.dart : سطر 8 ==> State<ProviderChangePasswordScreen> createState() => _ProviderChangePasswordScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\provider_home_screen.dart : سطر 19 ==> State<ProviderHomeScreen> createState() => _ProviderHomeScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\provider_orders_screen.dart : سطر 8 ==> State<ProviderOrdersScreen> createState() => _ProviderOrdersScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\provider_profile_screen.dart : سطر 51 ==> AuthManager.phone.isNotEmpty ? AuthManager.phone : '0791234567',
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\provider_review_screen.dart : سطر 15 ==> State<ProviderReviewScreen> createState() => _ProviderReviewScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\provider_wallet_screen.dart : سطر 8 ==> State<ProviderWalletScreen> createState() => _ProviderWalletScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\provider\qr_tools_screen.dart : سطر 12 ==> State<ProviderQrToolsScreen> createState() => _ProviderQrToolsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\settings\customize_screen.dart : سطر 10 ==> State<CustomizeScreen> createState() => _CustomizeScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\settings\profile_settings_screen.dart : سطر 12 ==> State<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\shared\review_success_screen.dart : سطر 17 ==> State<ReviewSuccessScreen> createState() => _ReviewSuccessScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\station\drivers_management.dart : سطر 10 ==> {'name': 'أحمد محمد', 'phone': '0791234567', 'status': 'active', 'trips': 24, 'rating': 4.9},
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\station\drivers_management.dart : سطر 11 ==> {'name': 'خالد يوسف', 'phone': '0781234567', 'status': 'active', 'trips': 18, 'rating': 4.7},
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\station\drivers_management.dart : سطر 12 ==> {'name': 'محمد علي', 'phone': '0771234567', 'status': 'offline', 'trips': 32, 'rating': 4.8},
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\station\station_dashboard.dart : سطر 9 ==> State<StationDashboard> createState() => _StationDashboardState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\station\station_prices_screen.dart : سطر 9 ==> State<StationPricesScreen> createState() => _StationPricesScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\screens\tanker\tanker_settings.dart : سطر 8 ==> State<TankerSettingsScreen> createState() => _TankerSettingsScreenState();
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\services\advertisement_service.dart : سطر 6 ==> const String kMockProviderId = 'usr_provider_001';
+C:\Users\ToughBook Owner\QatorahProject\qatorah_new\lib\services\advertisement_service.dart : سطر 7 ==> const String kMockAdminId = 'admin_super_001';

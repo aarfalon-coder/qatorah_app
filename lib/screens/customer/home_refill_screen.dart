@@ -1,15 +1,16 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
-import 'package:qatorah_app/models/order_model.dart';
 import 'package:qatorah_app/services/location_service.dart';
-import 'package:qatorah_app/services/order_service.dart';
+import 'supplier_selection_screen.dart';
 
 class HomeRefillScreen extends StatefulWidget {
-  const HomeRefillScreen({super.key});
+  // ✅ جعلنا cartItems اختيارياً لتجنب الأخطاء في الشاشات الأخرى
+  final Map<String, int> cartItems;
+  const HomeRefillScreen({super.key, this.cartItems = const {}});
 
   @override
   State<HomeRefillScreen> createState() => _HomeRefillScreenState();
@@ -20,20 +21,6 @@ class _HomeRefillScreenState extends State<HomeRefillScreen> {
   LatLng _currentLocation = const LatLng(32.5556, 35.8500);
   String _currentAddress = 'جاري تحديد موقعك...';
   bool _isLoading = true;
-  bool _isRequesting = false;
-  bool _driverAssigned = false;
-
-  // بيانات السائق (محاكاة)
-  final Map<String, dynamic> _driverData = {
-    'name': 'محمد أحمد',
-    'phone': '0791234567',
-    'car': 'شاحنة مياه - أزرق',
-    'rating': 4.9,
-    'distance': 1.2,
-    'etaMinutes': 5,
-  };
-
-  List<Marker> _truckMarkers = [];
   Timer? _addressDebounce;
 
   @override
@@ -42,56 +29,26 @@ class _HomeRefillScreenState extends State<HomeRefillScreen> {
     _initLocation();
   }
 
-  @override
-  void dispose() {
-    _addressDebounce?.cancel();
-    super.dispose();
-  }
-
   Future<void> _initLocation() async {
     try {
       Position pos = await LocationService.getCurrentPosition();
       String addr = await LocationService.getAddressFromCoordinates(
-        pos.latitude,
-        pos.longitude,
-      );
+          pos.latitude, pos.longitude);
+      if (!mounted) return;
       setState(() {
         _currentLocation = LatLng(pos.latitude, pos.longitude);
         _currentAddress = addr;
         _isLoading = false;
       });
       _mapController.move(_currentLocation, 16.0);
-      _generateNearbyTrucks();
     } catch (e) {
       setState(() {
-        _currentAddress = 'تعذر تحديد الموقع - حرك الخريطة';
+        _currentAddress = 'تعذر تحديد الموقع - يرجى تحريك الخريطة';
         _isLoading = false;
       });
     }
   }
 
-  // توليد شاحنات مياه قريبة
-  void _generateNearbyTrucks() {
-    _truckMarkers = [
-      Marker(
-        point: LatLng(_currentLocation.latitude + 0.008, _currentLocation.longitude + 0.006),
-        width: 40, height: 40,
-        child: const Icon(Icons.local_shipping, color: AppColors.waterBlue, size: 35),
-      ),
-      Marker(
-        point: LatLng(_currentLocation.latitude - 0.005, _currentLocation.longitude - 0.007),
-        width: 40, height: 40,
-        child: const Icon(Icons.local_shipping, color: AppColors.crystalBlue, size: 35),
-      ),
-      Marker(
-        point: LatLng(_currentLocation.latitude + 0.003, _currentLocation.longitude - 0.008),
-        width: 40, height: 40,
-        child: const Icon(Icons.local_shipping, color: AppColors.waterBlue, size: 35),
-      ),
-    ];
-  }
-
-  // تحديث العنوان عند توقف الخريطة عن الحركة
   void _onMapPositionChanged(MapCamera position, bool hasGesture) {
     if (hasGesture) {
       _addressDebounce?.cancel();
@@ -102,343 +59,231 @@ class _HomeRefillScreenState extends State<HomeRefillScreen> {
           _currentAddress = 'جاري جلب العنوان...';
         });
         LocationService.getAddressFromCoordinates(
-          position.center.latitude,
-          position.center.longitude,
-        ).then((addr) {
-          if (mounted) {
-            setState(() {
-              _currentAddress = addr;
-            });
-          }
+                position.center.latitude, position.center.longitude)
+            .then((addr) {
+          if (mounted) setState(() => _currentAddress = addr);
         }).catchError((_) {
           if (mounted) {
-            setState(() {
-              _currentAddress = 'موقع محدد على الخريطة';
-            });
+            setState(() => _currentAddress = 'موقع محدد على الخريطة');
           }
         });
       });
     }
   }
 
-  Future<void> _requestRefill() async {
-    setState(() => _isRequesting = true);
-
-    String orderId = '';
-    bool success = false;
-
-    try {
-      final newOrder = OrderModel(
-        id: '',
-        customerId: 'customer_123',
-        customerName: 'عميل تجريبي',
-        customerPhone: '0790000000',
-        serviceType: 'home_refill',
-        details: {
-          'item': 'قارورة مياه - تعبئة',
-          'quantity': 1,
-          'price': 1.0,
-        },
-        latitude: _currentLocation.latitude,
-        longitude: _currentLocation.longitude,
-        address: _currentAddress,
-        locationLabel: 'موقع GPS',
-        notes: 'طلب تعبئة قارورة مياه باب البيت',
-        timestamp: DateTime.now(),
-      );
-
-      // محاولة الحفظ في Firestore مع timeout
-      orderId = await OrderService.createOrder(newOrder).timeout(
-        const Duration(seconds: 8),
-        onTimeout: () => throw Exception('انتهت مهلة الاتصال'),
-      );
-      print('✅ تم الحفظ في Firestore: $orderId');
-      success = true;
-    } catch (e) {
-      print('⚠️ فشل Firestore: $e');
-      // ✅ Fallback: حفظ محلي حتى لو فشل Firestore
-      orderId = 'REFILL_${DateTime.now().millisecondsSinceEpoch}';
-      success = true;
-      print('💾 تم الحفظ محلياً: $orderId');
-    }
-
-    if (!mounted) return;
-
-    // انتظار قصير ثم الانتقال لمرحلة السائق
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-    setState(() {
-      _isRequesting = false;
-      _driverAssigned = true;
-    });
-
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم الطلب محلياً (رقم: $orderId) - سيُرسل عند توفر الاتصال'),
-          backgroundColor: AppColors.goldDark,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final totalItems = widget.cartItems.values.fold(0, (a, b) => a + b);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('عبي باب بيتك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('موقع التوصيل',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context)),
       ),
       body: Stack(
         children: [
-          // 1. طبقة الخريطة الكاملة
           _isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.waterBlue))
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.waterBlue))
               : FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: _currentLocation,
-                    initialZoom: 16.0,
-                    onPositionChanged: _onMapPositionChanged,
-                  ),
+                      initialCenter: _currentLocation,
+                      initialZoom: 16.0,
+                      onPositionChanged: _onMapPositionChanged),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.qatorah',
-                    ),
-                    MarkerLayer(markers: _truckMarkers),
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.qatorah.app'),
                   ],
                 ),
-
-          // 2. ✅ الدبوس الثابت في منتصف الشاشة (مثل أوبر)
           if (!_isLoading)
-            const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_pin, color: AppColors.plumberRed, size: 50),
-                  SizedBox(height: 8),
-                ],
+            Positioned(
+              top: screenHeight * 0.35,
+              left: 0,
+              right: 0,
+              child: const Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(Icons.location_pin,
+                        color: AppColors.plumberRed, size: 65),
+                    Icon(Icons.circle, color: Colors.white, size: 18),
+                  ],
+                ),
               ),
             ),
-
-          // 3. زر "موقعي الحالي" العائم
-          if (!_isLoading && !_driverAssigned)
+          if (!_isLoading)
             Positioned(
               right: 16,
-              bottom: 280,
+              top: screenHeight * 0.25,
               child: FloatingActionButton(
                 heroTag: 'myLocation',
+                mini: true,
                 backgroundColor: AppColors.crystalBlue,
                 onPressed: () async {
                   try {
                     Position pos = await LocationService.getCurrentPosition();
-                    String addr = await LocationService.getAddressFromCoordinates(
-                      pos.latitude,
-                      pos.longitude,
-                    );
+                    String addr =
+                        await LocationService.getAddressFromCoordinates(
+                            pos.latitude, pos.longitude);
+                    if (!context.mounted) return;
                     setState(() {
                       _currentLocation = LatLng(pos.latitude, pos.longitude);
                       _currentAddress = addr;
                     });
                     _mapController.move(_currentLocation, 16.0);
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تعذر تحديد الموقع')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('تعذر تحديد الموقع')));
+                    }
                   }
                 },
-                child: const Icon(Icons.my_location, color: Colors.white),
+                child: const Icon(Icons.my_location,
+                    color: Colors.white, size: 20),
               ),
             ),
-
-          // 4. اللوحة السفلية
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _driverAssigned ? _buildDriverAssignedPanel() : _buildRequestPanel(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // لوحة الطلب (قبل الضغط)
-  Widget _buildRequestPanel() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0E1A),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -5))],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // عرض الموقع الحالي المحدد
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on, color: AppColors.plumberRed, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _currentAddress,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+          if (!_isLoading)
+            DraggableScrollableSheet(
+              initialChildSize: 0.35,
+              minChildSize: 0.25,
+              maxChildSize: 0.75,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0A0E1A),
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 15,
+                          offset: Offset(0, -5))
+                    ],
                   ),
-                ),
-              ],
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      Center(
+                          child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                  color: Colors.white38,
+                                  borderRadius: BorderRadius.circular(2)))),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on,
+                                color: AppColors.plumberRed, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(_currentAddress,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 13),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.swipe_up,
+                                color: AppColors.waterBlue, size: 20),
+                            SizedBox(width: 6),
+                            Text('اسحب للأعلى لمراجعة الطلب',
+                                style: TextStyle(
+                                    color: AppColors.waterBlue,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: AppColors.goldLight.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: AppColors.goldLight
+                                    .withValues(alpha: 0.3))),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('الأصناف المختارة:',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                            Text('$totalItems صنف',
+                                style: const TextStyle(
+                                    color: AppColors.goldLight,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SupplierSelectionScreen(
+                                  cartItems: widget
+                                      .cartItems, // ✅ تمرير البيانات بشكل صحيح
+                                  latitude: _currentLocation.latitude,
+                                  longitude: _currentLocation.longitude,
+                                  address: _currentAddress,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.store, color: Colors.black),
+                          label: const Text(
+                              'البحث عن المحطات القريبة وتأكيد الطلب',
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.waterBlue,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12))),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('قارورة مياه - تعبئة', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('السعر: 1.00 د.أ (شامل التوصيل)', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: AppColors.waterBlue.withValues(alpha: 0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.water_drop, color: AppColors.waterBlue, size: 28),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _isRequesting ? null : _requestRefill,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.waterBlue,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isRequesting
-                  ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                      SizedBox(width: 10),
-                      Text('جاري البحث عن أقرب شاحنة مياه...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ])
-                  : const Text('اطلب تعبئة قارورة المياه الآن', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  // لوحة تتبع السائق (مثل أوبر)
-  Widget _buildDriverAssignedPanel() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0E1A),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-          ),
-          const SizedBox(height: 16),
-          
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(color: AppColors.waterBlue.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.check_circle, color: AppColors.waterBlue, size: 20),
-              SizedBox(width: 8),
-              Text('تم قبول الطلب - الشاحنة في الطريق', style: TextStyle(color: AppColors.waterBlue, fontWeight: FontWeight.bold)),
-            ]),
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            children: [
-              Container(
-                width: 60, height: 60,
-                decoration: BoxDecoration(color: AppColors.navyDark, shape: BoxShape.circle, border: Border.all(color: AppColors.waterBlue, width: 2)),
-                child: const Icon(Icons.person, color: AppColors.waterBlue, size: 35),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_driverData['name'], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(_driverData['car'], style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: AppColors.goldLight, size: 16),
-                        const SizedBox(width: 4),
-                        Text('${_driverData['rating']} تقييم', style: const TextStyle(color: Colors.white, fontSize: 14)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.phone, color: AppColors.waterBlue, size: 30),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('جاري الاتصال بـ ${_driverData['phone']}...'))
-                  );
-                },
-              ),
-            ],
-          ),
-          
-          const Divider(color: Colors.white24, height: 30),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _infoBox('المسافة', '${_driverData['distance']} كم', Icons.route),
-              _infoBox('الوقت المتوقع', '${_driverData['etaMinutes']} دقائق', Icons.access_time),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoBox(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.crystalBlue, size: 24),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-      ],
     );
   }
 }

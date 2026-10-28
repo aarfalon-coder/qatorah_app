@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:qatorah_app/models/review_model.dart';
 
 class ReviewService {
@@ -7,7 +8,7 @@ class ReviewService {
   Future<void> submitReview(ReviewModel review) async {
     // هنا سيتم إرسال التقييم لـ Firebase
     _reviews.add(review);
-    print('✅ تم حفظ التقييم: ${review.id}');
+    debugPrint('✅ تم حفظ التقييم: ${review.id}');
   }
 
   Future<List<ReviewModel>> getReviewsForProvider(String providerId) async {

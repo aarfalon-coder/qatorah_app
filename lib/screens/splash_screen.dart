@@ -3,7 +3,7 @@ import 'package:qatorah_app/core/constants/app_info.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
 import 'package:qatorah_app/screens/auth/login_screen.dart';
-import 'package:qatorah_app/screens/ads/startup_screen.dart'; // ✅ إضافة جديدة
+import 'package:qatorah_app/screens/ads/startup_screen.dart';
 import 'package:qatorah_app/screens/provider_home.dart';
 import 'package:qatorah_app/screens/shared/placeholder_screen.dart';
 
@@ -34,7 +34,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _init() async {
-    // انتظار ثانيتين + تحميل الجلسة
     await Future.delayed(const Duration(seconds: 2));
     await AuthManager.loadSession();
     if (mounted) _goNext();
@@ -52,23 +51,21 @@ class _SplashScreenState extends State<SplashScreen>
 
       switch (AuthManager.role) {
         case UserRole.customer:
-          // ✅ التعديل هنا: توجيه العميل إلى شاشة بدء التشغيل (لفحص الإعلان أولاً)
           nextScreen = const StartupScreen();
           break;
         case UserRole.stationOwner:
-        case UserRole.factory:
+        case UserRole.factoryOwner:
         case UserRole.stationTechnician:
         case UserRole.plumber:
+        case UserRole.electrician:
+        case UserRole.partsProvider:
+        case UserRole.gasSupplier:
           nextScreen = const ProviderHomeScreen();
           break;
-        case UserRole.driver:
-          nextScreen = const PlaceholderScreen(title: 'شاشة السائق');
+        case UserRole.tankerDriver:
+        case UserRole.distributionDriver:
+          nextScreen = const PlaceholderScreen(title: 'شاشة السائقين');
           break;
-        case UserRole.tanker:
-          nextScreen = const PlaceholderScreen(title: 'شاشة التنك (أوبر)');
-          break;
-        default:
-          nextScreen = const StartupScreen();
       }
     } else {
       debugPrint('=== SPLASH: المستخدم غير مسجل → LoginScreen ===');

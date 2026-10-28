@@ -9,18 +9,15 @@ class TransactionModel {
   final String status; // 'completed', 'pending', 'failed'
   final String description;
 
-  // ── حقول الطلب/الإعلان ──
   final String? orderId;
   final String? adId;
   final String? referenceId;
 
-  // ── ✅ حقول العمولة الجديدة ──
   final String? customerId;
   final String? providerId;
-  final double commission;      // قيمة العمولة (5%)
-  final double providerNet;     // صافي المزود بعد الخصم
+  final double commission;
+  final double providerNet;
 
-  // ── الأرصدة ──
   final double balanceBefore;
   final double balanceAfter;
 

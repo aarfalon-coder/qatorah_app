@@ -1,16 +1,19 @@
-import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
-import 'package:qatorah_app/core/widgets/ads/ad_type_badge.dart';
-import 'package:qatorah_app/managers/advertisement_manager.dart';
-import 'package:qatorah_app/models/advertisement_model.dart';
-import 'package:qatorah_app/models/comment_model.dart';
-import 'package:qatorah_app/models/region_model.dart';
+import 'package:qatorah_app/managers/auth_manager.dart';
 
 class AdDetailsScreen extends StatefulWidget {
-  final AdvertisementModel ad;
-  const AdDetailsScreen({super.key, required this.ad});
+  final String adId;
+  final Map<String, dynamic> initialData;
+
+  const AdDetailsScreen({
+    super.key,
+    required this.adId,
+    required this.initialData,
+  });
 
   @override
   State<AdDetailsScreen> createState() => _AdDetailsScreenState();
@@ -18,45 +21,282 @@ class AdDetailsScreen extends StatefulWidget {
 
 class _AdDetailsScreenState extends State<AdDetailsScreen> {
   final _commentCtrl = TextEditingController();
-  String? _replyingToId;
-  final _replyCtrl = TextEditingController();
+  final _pageController = PageController();
+  int _currentPage = 0;
+  bool _isLiked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfLiked();
+    _incrementViews();
+  }
 
   @override
   void dispose() {
     _commentCtrl.dispose();
-    _replyCtrl.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _incrementViews() async {
+    await FirebaseFirestore.instance
+        .collection('marketplace_ads')
+        .doc(widget.adId)
+        .update({'views': FieldValue.increment(1)});
+  }
+
+  Future<void> _checkIfLiked() async {
+    final userId = AuthManager.firebaseUid;
+    if (userId == null) return;
+    
+    final doc = await FirebaseFirestore.instance
+        .collection('marketplace_likes')
+        .doc(widget.adId)
+        .collection('user_likes')
+        .doc(userId)
+        .get();
+        
+    setState(() {
+      _isLiked = doc.exists;
+    });
+  }
+
+  Future<void> _toggleLike() async {
+    final userId = AuthManager.firebaseUid;
+    if (userId == null) return;
+
+    final likeRef = FirebaseFirestore.instance
+        .collection('marketplace_likes')
+        .doc(widget.adId)
+        .collection('user_likes')
+        .doc(userId);
+
+    if (_isLiked) {
+      await likeRef.delete();
+      await FirebaseFirestore.instance
+          .collection('marketplace_ads')
+          .doc(widget.adId)
+          .update({'likes': FieldValue.increment(-1)});
+    } else {
+      await likeRef.set({'userId': userId, 'createdAt': FieldValue.serverTimestamp()});
+      await FirebaseFirestore.instance
+          .collection('marketplace_ads')
+          .doc(widget.adId)
+          .update({'likes': FieldValue.increment(1)});
+    }
+    setState(() => _isLiked = !_isLiked);
+  }
+
+  Future<void> _addComment() async {
+    if (_commentCtrl.text.trim().isEmpty) return;
+    final userId = AuthManager.firebaseUid;
+
+    await FirebaseFirestore.instance
+        .collection('marketplace_ads')
+        .doc(widget.adId)
+        .collection('comments')
+        .add({
+      'user_id': userId,
+      'user_name': AuthManager.firstName,
+      'text': _commentCtrl.text.trim(),
+      'likes': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    _commentCtrl.clear();
+  }
+
+  Future<void> _callSeller(String phone) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
+  Future<void> _deleteAd() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1F2E),
+        title: const Text('حذف الإعلان', style: TextStyle(color: Colors.white)),
+        content: const Text('هل أنت متأكد من حذف هذا الإعلان نهائياً؟', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.plumberRed),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await FirebaseFirestore.instance.collection('marketplace_ads').doc(widget.adId).delete();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حذف الإعلان بنجاح'), backgroundColor: AppColors.refillGreen),
+        );
+      }
+    }
+  }
+
+  // ✅ الدالة الجديدة لتكبير الصورة
+  void _showZoomedImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero, // لجعل النافذة تملأ الشاشة
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => const CircularProgressIndicator(color: AppColors.goldLight),
+                  errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, color: Colors.white54, size: 50),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdvertisementManager>().trackView(widget.ad.id);
-    });
+    final isOwner = AuthManager.firebaseUid == widget.initialData['seller_id'];
+    final isAdmin = AuthManager.adminLevel >= 4;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E1A),
-      body: Consumer<AdvertisementManager>(
-        builder: (context, mgr, _) {
-          final likes = mgr.getAdLikes(widget.ad.id);
-          final comments = mgr.getAdComments(widget.ad.id);
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('marketplace_ads').doc(widget.adId).snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.goldLight));
+          
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final currentImages = List<String>.from(data['images'] ?? []);
+          final likes = data['likes'] ?? 0;
+          final views = data['views'] ?? 0;
 
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 250,
+                expandedHeight: 300,
                 pinned: true,
                 backgroundColor: const Color(0xFF1A1F2E),
                 leading: IconButton(
-                  icon: Container(padding: const EdgeInsets.all(8), decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const Icon(Icons.arrow_back, color: Colors.white)),
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                    child: const Icon(Icons.arrow_back, color: Colors.white),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
+                actions: [
+                  if (isOwner || isAdmin)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: AppColors.plumberRed),
+                      onPressed: _deleteAd,
+                    ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: widget.ad.images.isNotEmpty
-                      ? Image.file(File(widget.ad.images.first), fit: BoxFit.cover)
-                      : Container(color: Colors.grey[800], child: const Icon(Icons.image, size: 60, color: Colors.white24)),
+                  background: Stack(
+                    children: [
+                      currentImages.isNotEmpty
+                          ? PageView.builder(
+                              controller: _pageController,
+                              itemCount: currentImages.length,
+                              onPageChanged: (index) => setState(() => _currentPage = index),
+                              itemBuilder: (context, index) {
+                                // ✅ تم إضافة GestureDetector هنا لتفعيل التكبير عند الضغط
+                                return GestureDetector(
+                                  onTap: () => _showZoomedImage(currentImages[index]),
+                                  child: CachedNetworkImage(
+                                    imageUrl: currentImages[index],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: AppColors.goldLight)),
+                                    errorWidget: (context, url, error) => Container(
+                                      color: Colors.grey[800],
+                                      child: const Icon(Icons.broken_image, size: 60, color: Colors.white24),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : Container(color: Colors.grey[800], child: const Icon(Icons.image, size: 60, color: Colors.white24)),
+                      
+                      if (currentImages.length > 1)
+                        Positioned(
+                          bottom: 16,
+                          left: 0,
+                          right: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(currentImages.length, (index) {
+                              return Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: _currentPage == index ? 12 : 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _currentPage == index ? AppColors.goldLight : Colors.white54,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      
+                      if (data['isGuaranteed'] == true)
+                        Positioned(
+                          top: 60,
+                          right: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.refillGreen,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.verified_user, color: Colors.white, size: 18),
+                                SizedBox(width: 6),
+                                Text('كفالة قطوره', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
+
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -64,98 +304,114 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AdTypeBadge(type: widget.ad.type),
-                          const SizedBox(width: 10),
                           Expanded(
-                            child: Text(widget.ad.title, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              data['title'] ?? 'بدون عنوان',
+                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Text(
+                            data['price'] != null && data['price'] > 0 ? '${data['price']} د.أ' : 'قابل للتفاوض',
+                            style: const TextStyle(color: AppColors.goldLight, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
+
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1F2E), 
+                          color: const Color(0xFF1A1F2E),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1))
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                         ),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              backgroundColor: AppColors.goldLight.withValues(alpha: 0.2),
-                              child: const Icon(Icons.store, color: AppColors.goldLight),
+                            const CircleAvatar(
+                              backgroundColor: AppColors.goldLight,
+                              child: Icon(Icons.store, color: Color(0xFF0A0E1A)),
                             ),
                             const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start, 
-                              children: [
-                                Text(widget.ad.publisher.userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                                const SizedBox(height: 4),
-                                Text('⭐ ${widget.ad.publisher.userRating}  •  ${widget.ad.publisher.userRole}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                              ]
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('📞 جاري الاتصال بـ ${widget.ad.publisher.userPhone}...'), backgroundColor: AppColors.refillGreen)
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: const BoxDecoration(color: AppColors.refillGreen, shape: BoxShape.circle),
-                                child: const Icon(Icons.phone, color: Colors.white),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['seller_name'] ?? 'بائع',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    data['governorate'] ?? 'الأردن',
+                                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  ),
+                                ],
                               ),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.phone, color: AppColors.refillGreen),
+                                  onPressed: () => _callSeller(data['seller_phone']),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.message, color: AppColors.crystalBlue),
+                                  onPressed: () async {
+                                    final uri = Uri.parse("https://wa.me/${data['seller_phone'].replaceAll(RegExp(r'\D'), '')}");
+                                    if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                  },
+                                ),
+                              ],
                             )
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
+
                       const Text('التفاصيل', style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
-                      Text(widget.ad.description, style: const TextStyle(color: Colors.white70, fontSize: 15, height: 1.6)),
-                      
-                      const SizedBox(height: 24),
-                      const Text('التغطية الجغرافية', style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: AppColors.crystalBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                        child: Row(children: [
-                          const Icon(Icons.location_on, color: AppColors.crystalBlue),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(Regions.describeCoverage(widget.ad.region, widget.ad.type.code), style: const TextStyle(color: Colors.white70, fontSize: 14))),
-                        ]),
+                      Text(
+                        data['description'] ?? 'لا يوجد وصف',
+                        style: const TextStyle(color: Colors.white70, fontSize: 15, height: 1.6),
                       ),
+                      const SizedBox(height: 24),
 
-                      const SizedBox(height: 30),
-                      // ═══ زر الإعجاب بالإعلان ═══
-                      GestureDetector(
-                        onTap: () => mgr.toggleAdLike(widget.ad.id),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.plumberRed.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.plumberRed.withValues(alpha: 0.3)),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _toggleLike,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _isLiked ? AppColors.plumberRed.withValues(alpha: 0.2) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.plumberRed.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(_isLiked ? Icons.favorite : Icons.favorite_border, color: AppColors.plumberRed, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text('$likes', style: const TextStyle(color: AppColors.plumberRed, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(width: 16),
+                          Row(
                             children: [
-                              const Icon(Icons.favorite, color: AppColors.plumberRed, size: 20),
-                              const SizedBox(width: 8),
-                              Text('أعجبني ($likes)', style: const TextStyle(color: AppColors.plumberRed, fontWeight: FontWeight.bold)),
+                              const Icon(Icons.visibility, color: Colors.white54, size: 20),
+                              const SizedBox(width: 6),
+                              Text('$views', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-
                       const SizedBox(height: 30),
+
                       const Text('التعليقات', style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
-                      
-                      // ═══ إضافة تعليق ═══
                       Row(
                         children: [
                           Expanded(
@@ -174,12 +430,7 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: () {
-                              if (_commentCtrl.text.trim().isNotEmpty) {
-                                mgr.addComment(widget.ad.id, _commentCtrl.text.trim(), 'أنا');
-                                _commentCtrl.clear();
-                              }
-                            },
+                            onTap: _addComment,
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: const BoxDecoration(color: AppColors.goldLight, shape: BoxShape.circle),
@@ -188,11 +439,35 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
                           )
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
-                      // ═══ قائمة التعليقات ═══
-                      ...comments.map((c) => _buildCommentWidget(context, mgr, c)),
-                      
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('marketplace_ads')
+                            .doc(widget.adId)
+                            .collection('comments')
+                            .orderBy('createdAt', descending: true)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) return const SizedBox.shrink();
+                          final comments = snapshot.data!.docs;
+                          
+                          if (comments.isEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.all(20),
+                              alignment: Alignment.center,
+                              child: const Text('لا توجد تعليقات بعد. كن أول من يعلّق!', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                            );
+                          }
+
+                          return Column(
+                            children: comments.map((doc) {
+                              final c = doc.data() as Map<String, dynamic>;
+                              return _buildCommentItem(c);
+                            }).toList(),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -200,131 +475,38 @@ class _AdDetailsScreenState extends State<AdDetailsScreen> {
               )
             ],
           );
-        }
-      )
+        },
+      ),
     );
   }
 
-  Widget _buildCommentWidget(BuildContext context, AdvertisementManager mgr, CommentModel comment) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1F2E),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(radius: 16, backgroundColor: AppColors.crystalBlue.withValues(alpha: 0.2), child: const Icon(Icons.person, size: 16, color: AppColors.crystalBlue)),
-                  const SizedBox(width: 8),
-                  Text(comment.userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                  const Spacer(),
-                  Text(_timeAgo(comment.createdAt), style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(comment.text, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => mgr.toggleCommentLike(widget.ad.id, comment.id),
-                    child: Row(children: [
-                      const Icon(Icons.favorite_border, size: 16, color: Colors.white54),
-                      const SizedBox(width: 4),
-                      Text('${comment.likes}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    ]),
-                  ),
-                  const SizedBox(width: 20),
-                  GestureDetector(
-                    onTap: () => setState(() => _replyingToId = comment.id),
-                    child: const Row(children: [
-                      Icon(Icons.reply, size: 16, color: AppColors.goldLight),
-                      SizedBox(width: 4),
-                      Text('رد', style: TextStyle(color: AppColors.goldLight, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ]),
-                  )
-                ],
-              ),
-              if (_replyingToId == comment.id) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _replyCtrl,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: 'اكتب رداً...',
-                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                          filled: true,
-                          fillColor: Colors.black.withValues(alpha: 0.3),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        if (_replyCtrl.text.trim().isNotEmpty) {
-                          mgr.addReply(widget.ad.id, comment.id, _replyCtrl.text.trim(), 'أنا');
-                          _replyCtrl.clear();
-                          setState(() => _replyingToId = null);
-                        }
-                      },
-                      child: const Icon(Icons.send, color: AppColors.goldLight, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => setState(() => _replyingToId = null),
-                      child: const Icon(Icons.close, color: Colors.white38, size: 20),
-                    )
-                  ],
-                )
-              ]
-            ],
-          ),
-        ),
-        if (comment.replies.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(right: 24, bottom: 12),
-            child: Column(
-              children: comment.replies.map((r) => _buildReplyWidget(r)).toList(),
-            ),
-          )
-      ],
-    );
-  }
-
-  Widget _buildReplyWidget(CommentModel reply) {
+  Widget _buildCommentItem(Map<String, dynamic> c) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10),
-        border: Border(right: BorderSide(color: AppColors.goldLight.withValues(alpha: 0.5), width: 2)),
+        color: const Color(0xFF1A1F2E),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(reply.userName, style: const TextStyle(color: AppColors.goldLight, fontWeight: FontWeight.bold, fontSize: 12)),
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.crystalBlue.withValues(alpha: 0.2),
+                child: const Icon(Icons.person, size: 16, color: AppColors.crystalBlue),
+              ),
+              const SizedBox(width: 8),
+              Text(c['user_name'] ?? 'مستخدم', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const Spacer(),
-              Text(_timeAgo(reply.createdAt), style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10)),
+              if (c['createdAt'] != null)
+                Text(_timeAgo((c['createdAt'] as Timestamp).toDate()), style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10)),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(reply.text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 8),
+          Text(c['text'] ?? '', style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),
         ],
       ),
     );

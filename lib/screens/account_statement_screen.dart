@@ -13,29 +13,14 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
   String _selectedPeriod = 'الشهر';
   final List<String> _periods = ['اليوم', 'الأسبوع', 'الشهر', 'مخصص'];
 
-  // بيانات تجريبية للعميل
-  final List<Map<String, dynamic>> _customerTransactions = [
-    {'date': '2026-10-12', 'time': '10:30 ص', 'type': 'شراء', 'desc': '5 جالون مياه - محطة السلام', 'amount': -3.50, 'status': 'مكتمل'},
-    {'date': '2026-10-11', 'time': '03:15 م', 'type': 'شراء', 'desc': 'تنك مياه 200 لتر', 'amount': -3.00, 'status': 'مكتمل'},
-    {'date': '2026-10-10', 'time': '09:00 ص', 'type': 'شحن', 'desc': 'شحن رصيد المحفظة', 'amount': 20.00, 'status': 'نجاح'},
-    {'date': '2026-10-09', 'time': '06:45 م', 'type': 'شراء', 'desc': 'أسطوانة غاز', 'amount': -7.50, 'status': 'مكتمل'},
-    {'date': '2026-10-08', 'time': '11:20 ص', 'type': 'مكافأة', 'desc': 'استبدال نقاط بخصم', 'amount': 1.50, 'status': 'نجاح'},
-    {'date': '2026-10-07', 'time': '02:10 م', 'type': 'شراء', 'desc': 'خدمة صيانة - سباك', 'amount': -15.00, 'status': 'مكتمل'},
-  ];
-
-  // بيانات تجريبية لمزود الخدمة
-  final List<Map<String, dynamic>> _providerTransactions = [
-    {'date': '2026-10-12', 'time': '10:30 ص', 'type': 'مبيعة', 'desc': 'طلب #1024 - محمد أحمد', 'amount': 3.50, 'commission': -0.35, 'status': 'تم التسليم'},
-    {'date': '2026-10-12', 'time': '11:15 ص', 'type': 'مبيعة', 'desc': 'طلب #1025 - سارة خالد', 'amount': 7.50, 'commission': -0.75, 'status': 'تم التسليم'},
-    {'date': '2026-10-11', 'time': '09:00 ص', 'type': 'عمولة', 'desc': 'عمولة الشركة - طلبات الأمس', 'amount': -5.20, 'commission': 0, 'status': 'مخصوم'},
-    {'date': '2026-10-11', 'time': '02:30 م', 'type': 'مبيعة', 'desc': 'طلب #1020 - مطعم البركة', 'amount': 12.00, 'commission': -1.20, 'status': 'تم التسليم'},
-    {'date': '2026-10-10', 'time': '04:00 م', 'type': 'سحب', 'desc': 'سحب أرباح للمحفظة', 'amount': -50.00, 'commission': 0, 'status': 'مكتمل'},
-    {'date': '2026-10-09', 'time': '08:45 ص', 'type': 'مبيعة', 'desc': 'طلب #1015 - أبو خالد', 'amount': 3.00, 'commission': -0.30, 'status': 'تم التسليم'},
-  ];
+  // ✅ تم إزالة البيانات التجريبية واستبدالها بقوائم فارغة
+  final List<Map<String, dynamic>> _customerTransactions = [];
+  final List<Map<String, dynamic>> _providerTransactions = [];
 
   @override
   Widget build(BuildContext context) {
     final isProvider = AuthManager.isLoggedIn && AuthManager.isProvider;
+    final transactions = isProvider ? _providerTransactions : _customerTransactions;
     
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E1A),
@@ -60,15 +45,12 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ═══ فلتر الفترة ═══
             _buildPeriodFilter(),
             const SizedBox(height: 20),
 
-            // ═══ البطاقات المالية ══
             if (isProvider) _buildProviderSummary() else _buildCustomerSummary(),
             const SizedBox(height: 24),
 
-            // ═══ عنوان القائمة ═══
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -77,28 +59,47 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${(isProvider ? _providerTransactions : _customerTransactions).length} معاملة',
+                  '${transactions.length} معاملة',
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // ═══ قائمة المعاملات ═══
-            ...List.generate(
-              (isProvider ? _providerTransactions : _customerTransactions).length,
-              (index) {
-                final tx = (isProvider ? _providerTransactions : _customerTransactions)[index];
-                return _buildTransactionCard(tx, isProvider);
-              },
-            ),
+            // ✅ واجهة فارغة أنيقة في حال عدم وجود معاملات
+            if (transactions.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(40),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1F2E).withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.receipt_long, size: 60, color: Colors.white.withValues(alpha: 0.3)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد معاملات في هذه الفترة',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...List.generate(
+                transactions.length,
+                (index) {
+                  final tx = transactions[index];
+                  return _buildTransactionCard(tx, isProvider);
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ═══ فلتر الفترة ═══
   Widget _buildPeriodFilter() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -136,8 +137,8 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     );
   }
 
-  // ═══ ملخص العميل ═══
   Widget _buildCustomerSummary() {
+    // ✅ تم تصفير القيم الوهمية
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -157,16 +158,16 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _summaryItem('الرصيد المتبقي', '45.50 د.أ', AppColors.refillGreen, Icons.account_balance_wallet),
-              _summaryItem('إجمالي المشتريات', '-29.00 د.أ', AppColors.plumberRed, Icons.shopping_bag),
+              _summaryItem('الرصيد المتبقي', '0.00 د.أ', AppColors.refillGreen, Icons.account_balance_wallet),
+              _summaryItem('إجمالي المشتريات', '0.00 د.أ', AppColors.plumberRed, Icons.shopping_bag),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _summaryItem('المكافآت', '+1.50 د.أ', AppColors.goldLight, Icons.emoji_events),
-              _summaryItem('عدد الطلبات', '6', AppColors.crystalBlue, Icons.receipt_long),
+              _summaryItem('المكافآت', '0.00 د.أ', AppColors.goldLight, Icons.emoji_events),
+              _summaryItem('عدد الطلبات', '0', AppColors.crystalBlue, Icons.receipt_long),
             ],
           ),
         ],
@@ -174,16 +175,15 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     );
   }
 
-  // ═══ ملخص مزود الخدمة ═══
   Widget _buildProviderSummary() {
-    const totalSales = 26.00;
-    const totalCommission = -2.60;
-    const netProfit = 23.40;
-    const companyDue = 5.20; // ما على المزود للشركة
+    // ✅ تم تصفير القيم الوهمية
+    const totalSales = 0.0;
+    const totalCommission = 0.0;
+    const netProfit = 0.0;
+    const companyDue = 0.0;
 
     return Column(
       children: [
-        // البطاقة الرئيسية
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -232,8 +232,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
           ),
         ),
         const SizedBox(height: 16),
-
-        // بطاقة المستحقات للشركة
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -315,7 +313,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     );
   }
 
-  // ═══ بطاقة المعاملة ═══
   Widget _buildTransactionCard(Map<String, dynamic> tx, bool isProvider) {
     final amount = tx['amount'] as double;
     final isPositive = amount > 0;
@@ -331,7 +328,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
       ),
       child: Row(
         children: [
-          // الأيقونة
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -345,7 +341,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // التفاصيل
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +381,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                     ),
                   ],
                 ),
-                // عمولة الشركة (لمزود الخدمة فقط)
                 if (isProvider && commission != 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -401,7 +395,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
               ],
             ),
           ),
-          // المبلغ
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -445,7 +438,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     }
   }
 
-  // ═══ تصدير الكشف ═══
   void _exportStatement() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -462,7 +454,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     );
   }
 
-  // ═══ حوار الدفع/السحب ═══
   void _showPaymentDialog(double amount) {
     showDialog(
       context: context,

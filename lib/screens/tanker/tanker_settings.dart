@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 
 class TankerSettingsScreen extends StatefulWidget {
@@ -37,7 +37,7 @@ class _TankerSettingsScreenState extends State<TankerSettingsScreen> {
                 Icon(_isAvailable ? Icons.check_circle : Icons.cancel, color: _isAvailable ? AppColors.refillGreen : AppColors.plumberRed, size: 24),
                 const SizedBox(width: 12),
                 const Expanded(child: Text('متاح لاستقبال الطلبات', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
-                Switch(value: _isAvailable, activeColor: AppColors.refillGreen, onChanged: (v) => setState(() => _isAvailable = v)),
+                Switch(value: _isAvailable, activeThumbColor: AppColors.refillGreen, onChanged: (v) => setState(() => _isAvailable = v)),
               ],
             ),
           ),
@@ -53,7 +53,7 @@ class _TankerSettingsScreenState extends State<TankerSettingsScreen> {
                 const Icon(Icons.notifications, color: AppColors.goldLight, size: 24),
                 const SizedBox(width: 12),
                 const Expanded(child: Text('الإشعارات', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
-                Switch(value: _notifications, activeColor: AppColors.goldLight, onChanged: (v) => setState(() => _notifications = v)),
+                Switch(value: _notifications, activeThumbColor: AppColors.goldLight, onChanged: (v) => setState(() => _notifications = v)),
               ],
             ),
           ),
@@ -72,7 +72,7 @@ class _TankerSettingsScreenState extends State<TankerSettingsScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: _radius == r ? AppColors.tankCyan : Colors.white.withValues(alpha: 0.1)),
                   ),
-                  child: Center(child: Text('$r', style: TextStyle(color: _radius == r ? AppColors.tankCyan : Colors.white70, fontSize: 15, fontWeight: FontWeight.bold))),
+                  child: Center(child: Text(r, style: TextStyle(color: _radius == r ? AppColors.tankCyan : Colors.white70, fontSize: 15, fontWeight: FontWeight.bold))),
                 ),
               ),
             )).toList(),

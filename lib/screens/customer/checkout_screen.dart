@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/core/widgets/glass_widgets.dart';
+import 'package:qatorah_app/managers/auth_manager.dart';
 import 'package:qatorah_app/managers/cart_manager.dart';
 import 'package:qatorah_app/managers/providers_router.dart';
 import 'package:qatorah_app/models/order_model.dart';
@@ -20,7 +21,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _selectedStationId;
   bool _isProcessing = false;
   
-  // بيانات الموقع والملاحظات
   String _selectedAddress = 'لم يتم تحديد الموقع بعد';
   double _latitude = 0.0;
   double _longitude = 0.0;
@@ -32,7 +32,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  // دالة عرض خيارات الموقع الذكية
   Future<void> _selectLocation() async {
     showModalBottomSheet(
       context: context,
@@ -64,7 +63,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             _locationOption(Icons.home, 'العناوين المحفوظة (البيت/الشغل)', () {
               Navigator.pop(modalCtx);
               setState(() {
-                _selectedAddress = 'البيت - إربد، شارع الجامعة'; // مثال
+                _selectedAddress = 'البيت - إربد، شارع الجامعة';
                 _latitude = 32.5556;
                 _longitude = 35.8500;
               });
@@ -140,12 +139,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // تجهيز بيانات الطلب
       final newOrder = OrderModel(
-        id: '', // سيتم توليده تلقائياً داخل الخدمة
-        customerId: 'customer_123', // استبدله لاحقاً بـ UID المستخدم الحقيقي
-        customerName: 'عميل تجريبي',
-        customerPhone: '0790000000',
+        id: '',
+        customerId: AuthManager.firebaseUid ?? 'guest_user',
+        customerName: AuthManager.firstName.isNotEmpty ? AuthManager.firstName : 'عميل قطورة',
+        customerPhone: AuthManager.phone.isNotEmpty ? AuthManager.phone : '0790000000',
         serviceType: 'water',
         details: {
           'items': CartManager.items
@@ -161,15 +159,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         timestamp: DateTime.now(),
       );
 
-      // حفظ الطلب في Firestore
       final orderId = await OrderService.createOrder(newOrder);
 
       if (!mounted) return;
 
-      // تفريغ السلة
       CartManager.clear();
 
-      // ✅ نافذة نجاح مع زر "عرض كود الدفع"
       await showDialog(
         context: context,
         barrierDismissible: false,
@@ -208,7 +203,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(ctx); // إغلاق الديالوج
+                Navigator.pop(ctx);
                 Future.microtask(() {
                   if (!mounted) return;
                   Navigator.popUntil(context, (route) => route.isFirst);
@@ -218,7 +213,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             ElevatedButton.icon(
               onPressed: () {
-                // ✅ نستخدم ctx (context الديالوج) — مضمون شغال
                 Navigator.pushReplacement(
                   ctx,
                   MaterialPageRoute(
@@ -308,7 +302,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       const SizedBox(height: 25),
                       
-                      // قسم موقع التوصيل
                       const Text(
                         'موقع التوصيل',
                         style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold),
@@ -332,7 +325,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // قسم الملاحظات
                       const Text(
                         'ملاحظات للسائق (اختياري)',
                         style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold),
@@ -382,7 +374,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       }),
                       const SizedBox(height: 30),
 
-                      // زر التأكيد
                       SizedBox(
                         width: double.infinity,
                         height: 55,

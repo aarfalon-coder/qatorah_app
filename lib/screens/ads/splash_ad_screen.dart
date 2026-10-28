@@ -51,7 +51,7 @@ class _SplashAdScreenState extends State<SplashAdScreen> {
   void _goNext() {
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => CustomerHomeScreen()),
+      MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
       (route) => false,
     );
   }

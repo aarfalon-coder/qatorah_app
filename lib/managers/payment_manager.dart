@@ -2,8 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:qatorah_app/models/transaction_model.dart';
 
 class PaymentManager extends ChangeNotifier {
-  double _balance = 50.00; // رصيد مبدئي للتجربة
-  final int _points = 120;
+  double _balance = 0.0; // ✅ تم التعديل: البدء من الصفر
+  final int _points = 0;       // ✅ تم التعديل
+  String _userId = '';   // ✅ تمت الإضافة: لتخزين معرف المستخدم الحقيقي
   final List<TransactionModel> _transactions = [];
 
   double get balance => _balance;
@@ -11,38 +12,15 @@ class PaymentManager extends ChangeNotifier {
   List<TransactionModel> get transactions => List.unmodifiable(_transactions);
 
   PaymentManager() {
-    _seedMockData(); // تحميل بيانات وهمية للتجربة
+    // ✅ تم حذف _seedMockData() تماماً
   }
 
-  void _seedMockData() {
-    _transactions.addAll([
-      TransactionModel(
-        id: 'TXN-001',
-        userId: 'user_1',
-        type: 'payment',
-        amount: 5.5,
-        paymentMethod: 'wallet',
-        status: 'completed',
-        description: 'طلب توصيل أسطوانة غاز',
-        referenceId: 'ORD-992',
-        balanceBefore: 55.5,
-        balanceAfter: 50.0,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-      TransactionModel(
-        id: 'TXN-002',
-        userId: 'user_1',
-        type: 'refund',
-        amount: 2.0,
-        paymentMethod: 'wallet',
-        status: 'completed',
-        description: 'استرداد مبلغ إعلان مرفوض',
-        referenceId: 'AD-112',
-        balanceBefore: 48.0,
-        balanceAfter: 50.0,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ]);
+  // ✅ دالة جديدة لربط المستخدم الحالي (تُستدعى عند تسجيل الدخول)
+  void setUser(String userId) {
+    _userId = userId;
+    // TODO: هنا سيتم استدعاء دالة جلب الرصيد والحركات من Firestore
+    // _loadUserDataFromFirebase();
+    notifyListeners();
   }
 
   Future<bool> processPayment({
@@ -59,7 +37,7 @@ class PaymentManager extends ChangeNotifier {
     
     final txn = TransactionModel(
       id: 'TXN-${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'user_1', 
+      userId: _userId.isNotEmpty ? _userId : 'guest', // ✅ استخدام المعرف الحقيقي
       type: 'payment',
       amount: amount,
       paymentMethod: 'wallet',
@@ -72,7 +50,12 @@ class PaymentManager extends ChangeNotifier {
     );
 
     _transactions.insert(0, txn);
-    notifyListeners(); // تحديث الشاشات فوراً
+    
+    // TODO: Firebase - حفظ المعاملة وتحديث الرصيد في Firestore
+    // await FirebaseService.saveTransaction(txn);
+    // await FirebaseService.updateUserBalance(_userId, _balance);
+
+    notifyListeners();
     return true;
   }
 
@@ -82,7 +65,7 @@ class PaymentManager extends ChangeNotifier {
     
     final txn = TransactionModel(
       id: 'TXN-${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'user_1',
+      userId: _userId.isNotEmpty ? _userId : 'guest', // ✅ استخدام المعرف الحقيقي
       type: 'recharge',
       amount: amount,
       paymentMethod: 'card', 
@@ -94,6 +77,9 @@ class PaymentManager extends ChangeNotifier {
     );
 
     _transactions.insert(0, txn);
+    
+    // TODO: Firebase - حفظ المعاملة وتحديث الرصيد في Firestore
+
     notifyListeners();
   }
 }

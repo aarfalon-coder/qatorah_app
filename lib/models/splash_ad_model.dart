@@ -42,6 +42,9 @@ class SplashAdModel {
   final String advertiserName;
   final String advertiserPhone;
 
+  // 🆕 نوع الإعلان (للتحكم في مكان العرض)
+  final String adType; // 'market', 'governorates', 'hosting', 'kingdom'
+
   // 🕐 التوقيت
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -68,6 +71,7 @@ class SplashAdModel {
     this.isActive = true,
     required this.advertiserName,
     required this.advertiserPhone,
+    this.adType = 'market', // ✅ قيمة افتراضية آمنة
     required this.createdAt,
     required this.updatedAt,
     required this.createdBy,
@@ -127,6 +131,7 @@ class SplashAdModel {
       isActive: map['isActive'] ?? true,
       advertiserName: map['advertiserName'] ?? '',
       advertiserPhone: map['advertiserPhone'] ?? '',
+      adType: map['adType'] ?? 'market', // ✅ قراءة النوع من القاعدة
       createdAt:
           (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt:
@@ -156,6 +161,7 @@ class SplashAdModel {
       'isActive': isActive,
       'advertiserName': advertiserName,
       'advertiserPhone': advertiserPhone,
+      'adType': adType, // ✅ حفظ النوع في القاعدة
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'createdBy': createdBy,
@@ -183,6 +189,7 @@ class SplashAdModel {
     bool? isActive,
     String? advertiserName,
     String? advertiserPhone,
+    String? adType, // ✅ إضافة للنسخ
     DateTime? createdAt,
     DateTime? updatedAt,
     String? createdBy,
@@ -208,6 +215,7 @@ class SplashAdModel {
       isActive: isActive ?? this.isActive,
       advertiserName: advertiserName ?? this.advertiserName,
       advertiserPhone: advertiserPhone ?? this.advertiserPhone,
+      adType: adType ?? this.adType, // ✅
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,

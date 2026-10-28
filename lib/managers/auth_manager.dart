@@ -1,63 +1,72 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'profile_manager.dart';
 
+// ✅ تم تحديث قائمة الأدوار لتطابق النظام الجديد تماماً
 enum UserRole {
   customer,
   stationOwner,
-  factory,
-  driver,
-  tanker,
+  factoryOwner,
+  tankerDriver,
+  distributionDriver,
   stationTechnician,
   plumber,
+  electrician,
+  partsProvider,
+  gasSupplier, // تمت الإضافة لضمان شمولية الـ Enum
 }
 
 class AuthManager extends ChangeNotifier {
-  // ═══ حالة المصادقة ═══
   static bool isLoggedIn = false;
   static bool isSuperAdmin = false;
-
-  // ═══ نظام الصلاحيات الهرمي (5 مستويات) ═══
+  static bool isGuest = true;
   static int adminLevel = 0;
 
-  // ═══ بيانات المستخدم ═══
   static String firstName = '';
   static String phone = '';
   static UserRole role = UserRole.customer;
 
-  // ═══ بيانات مزود الخدمة ═══
   static bool isProvider = false;
   static String providerServiceType = '';
-
-  // ═══ Firebase UID ═══
   static String? firebaseUid;
+  static String currentGovernorateCode = 'amman';
 
-  // ═══ ثوابت مستويات الصلاحيات ═══
-  static const int LEVEL_NONE = 0;
-  static const int LEVEL_VIEWER = 1;
-  static const int LEVEL_SUPPORT = 2;
-  static const int LEVEL_MODERATOR = 3;
-  static const int LEVEL_MANAGER = 4;
-  static const int LEVEL_SUPER_ADMIN = 5;
+  static bool isSubscriptionActive = true;
+  static DateTime? subscriptionExpiryDate;
+  static double walletBalance = 0.0;
 
-  // ═══ التحقق من الصلاحيات ═══
-  static bool get canViewDashboard => adminLevel >= LEVEL_VIEWER;
-  static bool get canManageUsers => adminLevel >= LEVEL_MANAGER;
-  static bool get canReviewAds => adminLevel >= LEVEL_MODERATOR;
-  static bool get canHandleTickets => adminLevel >= LEVEL_SUPPORT;
-  static bool get canManagePayments => adminLevel >= LEVEL_MANAGER;
-  static bool get canBanUsers => adminLevel >= LEVEL_MODERATOR;
-  static bool get canDeleteContent => adminLevel >= LEVEL_MANAGER;
-  static bool get canManageAdmins => adminLevel >= LEVEL_SUPER_ADMIN;
-  static bool get hasFullAccess => adminLevel >= LEVEL_SUPER_ADMIN;
+  static const int levelNone = 0;
+  static const int levelViewer = 1;
+  static const int levelSupport = 2;
+  static const int levelModerator = 3;
+  static const int levelManager = 4;
+  static const int levelSuperAdmin = 5;
+
+  static bool get canViewDashboard => adminLevel >= levelViewer;
+  static bool get canManageUsers => adminLevel >= levelManager;
+  static bool get canReviewAds => adminLevel >= levelModerator;
+  static bool get canHandleTickets => adminLevel >= levelSupport;
+  static bool get canManagePayments => adminLevel >= levelManager;
+  static bool get canBanUsers => adminLevel >= levelModerator;
+  static bool get canDeleteContent => adminLevel >= levelManager;
+  static bool get canManageAdmins => adminLevel >= levelSuperAdmin;
+  static bool get hasFullAccess => adminLevel >= levelSuperAdmin;
 
   static String get adminLevelName {
     switch (adminLevel) {
-      case LEVEL_VIEWER: return 'مشاهد';
-      case LEVEL_SUPPORT: return 'دعم فني';
-      case LEVEL_MODERATOR: return 'مشرف';
-      case LEVEL_MANAGER: return 'مدير';
-      case LEVEL_SUPER_ADMIN: return 'سوبر أدمن';
-      default: return 'مستخدم عادي';
+      case levelViewer:
+        return 'مشاهد';
+      case levelSupport:
+        return 'دعم فني';
+      case levelModerator:
+        return 'مشرف';
+      case levelManager:
+        return 'مدير';
+      case levelSuperAdmin:
+        return 'سوبر أدمن';
+      default:
+        return 'مستخدم عادي';
     }
   }
 
@@ -74,69 +83,119 @@ class AuthManager extends ChangeNotifier {
     return permissions;
   }
 
-  // ═══ تسجيل دخول كمستخدم عادي ═══
+  static void setGuestMode(bool guest) {
+    isGuest = guest;
+  }
+
   static Future<void> login({
     required String firstName,
     required String phone,
     required UserRole role,
     String? firebaseUid,
+    String? governorateCode,
+    int? adminLevelParam,
   }) async {
     isLoggedIn = true;
-    isSuperAdmin = false;
-    adminLevel = LEVEL_NONE;
+    isGuest = false;
+    adminLevel = adminLevelParam ?? levelNone;
+    isSuperAdmin = adminLevel >= levelSuperAdmin;
+
     AuthManager.firstName = firstName;
     AuthManager.phone = phone;
     AuthManager.role = role;
     AuthManager.firebaseUid = firebaseUid;
+    AuthManager.currentGovernorateCode = governorateCode ?? 'amman';
     isProvider = false;
     providerServiceType = '';
+    isSubscriptionActive = true;
+    subscriptionExpiryDate = null;
+    walletBalance = 0.0;
+
+    try {
+      final profileManager = ProfileManager();
+      await profileManager.syncWithAuth();
+    } catch (_) {}
     await saveSession();
   }
 
-  // ═══ تسجيل دخول كمزود خدمة ═══
   static Future<void> loginAsProvider({
     required String firstName,
     required String phone,
     required String serviceType,
+    UserRole role = UserRole.stationOwner,
     String? firebaseUid,
   }) async {
     isLoggedIn = true;
+    isGuest = false;
     isSuperAdmin = false;
-    adminLevel = LEVEL_NONE;
+    adminLevel = levelNone;
     AuthManager.firstName = firstName;
     AuthManager.phone = phone;
-    role = UserRole.stationOwner;
+    AuthManager.role = role;
     AuthManager.firebaseUid = firebaseUid;
     isProvider = true;
     providerServiceType = serviceType;
+    isSubscriptionActive = true;
+    subscriptionExpiryDate = null;
+    walletBalance = 0.0;
+
+    try {
+      final profileManager = ProfileManager();
+      await profileManager.syncWithAuth();
+    } catch (_) {}
     await saveSession();
   }
 
-  // ═══ تسجيل الدخول كأدمن ═══
-  static Future<void> loginAsSuperAdmin({int level = LEVEL_SUPER_ADMIN}) async {
+  static Future<void> loginAsSuperAdmin({int level = levelSuperAdmin}) async {
     isLoggedIn = true;
-    isSuperAdmin = true;
-    adminLevel = level;
+    isGuest = false;
+    adminLevel = level.clamp(levelViewer, levelSuperAdmin).toInt();
+    isSuperAdmin = adminLevel >= levelSuperAdmin;
     firstName = 'المدير العام';
-    phone = '000000000';
+    phone = '';
     role = UserRole.customer;
     isProvider = false;
     providerServiceType = '';
+    isSubscriptionActive = true;
+    subscriptionExpiryDate = null;
+    walletBalance = 0.0;
+    isProvider = false;
+    providerServiceType = '';
+
+    try {
+      final profileManager = ProfileManager();
+      await profileManager.syncWithAuth();
+    } catch (_) {}
     await saveSession();
   }
 
-  // ═══ تغيير مستوى الصلاحية ═══
   static void updateAdminLevel(int newLevel) {
-    if (adminLevel == LEVEL_SUPER_ADMIN || newLevel <= adminLevel) {
+    if (adminLevel == levelSuperAdmin || newLevel <= adminLevel) {
       adminLevel = newLevel;
     }
   }
 
-  // ═══ حفظ الجلسة ═══
+  static void updateSubscriptionStatus(DateTime? expiryDate, double balance) {
+    subscriptionExpiryDate = expiryDate;
+    walletBalance = balance;
+    if (expiryDate == null) {
+      isSubscriptionActive = false;
+    } else {
+      isSubscriptionActive = expiryDate.isAfter(DateTime.now());
+    }
+  }
+
+  static void renewSubscription(DateTime newExpiryDate, double newBalance) {
+    subscriptionExpiryDate = newExpiryDate;
+    walletBalance = newBalance;
+    isSubscriptionActive = true;
+  }
+
   static Future<void> saveSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_logged_in', isLoggedIn);
+      await prefs.setBool('is_guest', isGuest);
       await prefs.setBool('is_super_admin', isSuperAdmin);
       await prefs.setInt('admin_level', adminLevel);
       await prefs.setString('first_name', firstName);
@@ -144,34 +203,39 @@ class AuthManager extends ChangeNotifier {
       await prefs.setString('role', role.name);
       await prefs.setBool('is_provider', isProvider);
       await prefs.setString('provider_service_type', providerServiceType);
+      await prefs.setString('governorate_code', currentGovernorateCode);
       if (firebaseUid != null) {
         await prefs.setString('firebase_uid', firebaseUid!);
+      } else {
+        await prefs.remove('firebase_uid');
       }
-      debugPrint('✅ تم حفظ الجلسة');
+      debugPrint('✅ تم حفظ الجلسة (Level: $adminLevel)');
     } catch (e) {
       debugPrint('❌ فشل حفظ الجلسة: $e');
     }
   }
 
-  // ═══ تحميل الجلسة ═══
   static Future<bool> loadSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final loggedIn = prefs.getBool('is_logged_in') ?? false;
       if (!loggedIn) {
-        debugPrint('ℹ️ لا توجد جلسة محفوظة');
+        isGuest = true;
+        debugPrint('ℹ️ لا توجد جلسة محفوظة (زائر)');
         return false;
       }
       isLoggedIn = true;
+      isGuest = prefs.getBool('is_guest') ?? false;
       isSuperAdmin = prefs.getBool('is_super_admin') ?? false;
       adminLevel = prefs.getInt('admin_level') ?? 0;
       firstName = prefs.getString('first_name') ?? '';
       phone = prefs.getString('phone') ?? '';
-      role = _parseRole(prefs.getString('role') ?? 'customer');
+      role = parseRole(prefs.getString('role') ?? 'customer');
       isProvider = prefs.getBool('is_provider') ?? false;
       providerServiceType = prefs.getString('provider_service_type') ?? '';
+      currentGovernorateCode = prefs.getString('governorate_code') ?? 'amman';
       firebaseUid = prefs.getString('firebase_uid');
-      debugPrint('✅ تم تحميل الجلسة: $firstName ($role)');
+      debugPrint('✅ تم تحميل الجلسة: $firstName (Level: $adminLevel)');
       return true;
     } catch (e) {
       debugPrint('❌ فشل تحميل الجلسة: $e');
@@ -179,17 +243,26 @@ class AuthManager extends ChangeNotifier {
     }
   }
 
-  // ═══ تسجيل الخروج ═══
   static Future<void> logout() async {
     isLoggedIn = false;
+    isGuest = true;
     isSuperAdmin = false;
-    adminLevel = LEVEL_NONE;
+    adminLevel = levelNone;
     firstName = '';
     phone = '';
     role = UserRole.customer;
     isProvider = false;
     providerServiceType = '';
     firebaseUid = null;
+    isSubscriptionActive = true;
+    subscriptionExpiryDate = null;
+    walletBalance = 0.0;
+    currentGovernorateCode = 'amman';
+    try {
+      await FirebaseAuth.instance.signOut();
+    } on FirebaseAuthException catch (e) {
+      debugPrint('❌ فشل تسجيل الخروج من Firebase: ${e.code}');
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
@@ -199,16 +272,35 @@ class AuthManager extends ChangeNotifier {
     }
   }
 
-  // ═══ تحويل String → UserRole ═══
-  static UserRole _parseRole(String roleStr) {
-    switch (roleStr) {
-      case 'stationOwner': return UserRole.stationOwner;
-      case 'factory': return UserRole.factory;
-      case 'driver': return UserRole.driver;
-      case 'tanker': return UserRole.tanker;
-      case 'stationTechnician': return UserRole.stationTechnician;
-      case 'plumber': return UserRole.plumber;
-      default: return UserRole.customer;
+  // ✅ دالة تحويل آمنة 100% تمنع أي انهيار
+  static UserRole parseRole(String roleStr) =>
+      tryParseRole(roleStr) ?? UserRole.customer;
+
+  static UserRole? tryParseRole(String roleStr) {
+    if (roleStr == 'customer') return UserRole.customer;
+    if (roleStr == 'stationOwner' || roleStr == 'station_owner') {
+      return UserRole.stationOwner;
     }
+    if (roleStr == 'factoryOwner' || roleStr == 'factory_owner') {
+      return UserRole.factoryOwner;
+    }
+    if (roleStr == 'tankerDriver' || roleStr == 'tanker_driver') {
+      return UserRole.tankerDriver;
+    }
+    if (roleStr == 'distributionDriver' || roleStr == 'distribution_driver') {
+      return UserRole.distributionDriver;
+    }
+    if (roleStr == 'stationTechnician' || roleStr == 'station_technician') {
+      return UserRole.stationTechnician;
+    }
+    if (roleStr == 'plumber') return UserRole.plumber;
+    if (roleStr == 'electrician') return UserRole.electrician;
+    if (roleStr == 'partsProvider' || roleStr == 'parts_provider') {
+      return UserRole.partsProvider;
+    }
+    if (roleStr == 'gasSupplier' || roleStr == 'gas_supplier') {
+      return UserRole.gasSupplier;
+    }
+    return null;
   }
 }

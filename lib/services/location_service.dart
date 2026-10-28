@@ -29,8 +29,10 @@ class LocationService {
     debugPrint('⏳ جاري طلب موقع دقيق من الـ GPS... (قد يأخذ 5-10 ثوانٍ)');
     
     Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best, // أعلى دقة ممكنة (GPS)
-      timeLimit: const Duration(seconds: 15), // مهلة 15 ثانية للحصول على إشارة قوية
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        timeLimit: Duration(seconds: 15),
+      ),
     );
 
     // 4. طباعة دقة الموقع بالمتر (هذا هو المعيار الحقيقي للدقة)

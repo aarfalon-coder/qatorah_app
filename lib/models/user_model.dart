@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
 
 class UserModel {
@@ -40,27 +39,41 @@ class UserModel {
     this.banReason,
   });
 
-  // ═══ دوال مساعدة ═══
   bool get isCustomer => role == UserRole.customer && !isProvider;
-  bool get isDriver => role == UserRole.driver;
+  bool get isDriver =>
+      role == UserRole.tankerDriver || role == UserRole.distributionDriver;
   bool get isStationOwner => role == UserRole.stationOwner;
-  bool get isFactory => role == UserRole.factory;
-  bool get isTanker => role == UserRole.tanker;
-  bool get isTechnician => role == UserRole.stationTechnician || role == UserRole.plumber;
+  bool get isFactory => role == UserRole.factoryOwner;
+  bool get isTechnician =>
+      role == UserRole.stationTechnician ||
+      role == UserRole.plumber ||
+      role == UserRole.electrician;
 
   String get roleName {
     switch (role) {
-      case UserRole.customer: return 'مستهلك';
-      case UserRole.stationOwner: return 'صاحب محطة';
-      case UserRole.factory: return 'مصنع';
-      case UserRole.driver: return 'سائق';
-      case UserRole.tanker: return 'سائق تنك';
-      case UserRole.stationTechnician: return 'فني';
-      case UserRole.plumber: return 'سباك';
+      case UserRole.customer:
+        return 'مستهلك';
+      case UserRole.stationOwner:
+        return 'صاحب محطة';
+      case UserRole.factoryOwner:
+        return 'صاحب مصنع';
+      case UserRole.tankerDriver:
+        return 'سائق تنك';
+      case UserRole.distributionDriver:
+        return 'سائق توزيع';
+      case UserRole.stationTechnician:
+        return 'فني محطات';
+      case UserRole.plumber:
+        return 'سباك';
+      case UserRole.electrician:
+        return 'كهربائي';
+      case UserRole.partsProvider:
+        return 'مزود قطع غيار';
+      case UserRole.gasSupplier:
+        return 'مزود غاز';
     }
   }
 
-  // ═══ Firestore ═══
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
     return UserModel(
       id: id,
@@ -104,7 +117,6 @@ class UserModel {
     };
   }
 
-  // ═══ من AuthManager ═══
   factory UserModel.fromAuthManager({required String id}) {
     return UserModel(
       id: id,
@@ -160,14 +172,6 @@ class UserModel {
   }
 
   static UserRole _parseRole(String roleStr) {
-    switch (roleStr) {
-      case 'stationOwner': return UserRole.stationOwner;
-      case 'factory': return UserRole.factory;
-      case 'driver': return UserRole.driver;
-      case 'tanker': return UserRole.tanker;
-      case 'stationTechnician': return UserRole.stationTechnician;
-      case 'plumber': return UserRole.plumber;
-      default: return UserRole.customer;
-    }
+    return AuthManager.parseRole(roleStr);
   }
 }

@@ -8,7 +8,7 @@ class StationProvider extends ChangeNotifier {
   List<ProductModel> _filteredProducts = [];
   String _selectedCategory = 'all';
   
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String? _errorMessage;
 
   // ═══ Getters ═══

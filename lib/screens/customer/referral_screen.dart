@@ -12,7 +12,6 @@ class ReferralScreen extends StatefulWidget {
 }
 
 class _ReferralScreenState extends State<ReferralScreen> {
-  // كود إحالة ثابت (لاحقاً يُولّد من Firestore حسب المستخدم)
   final String _referralCode = 'QTR-QASIM-1024';
   final int _successfulInvites = 37;
 
@@ -36,7 +35,6 @@ class _ReferralScreenState extends State<ReferralScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ═══ بطاقة العنوان ═══
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -65,7 +63,6 @@ class _ReferralScreenState extends State<ReferralScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ═══ كود الإحالة ═══
             const Text('كود الدعوة الخاص بك', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Container(
@@ -98,7 +95,6 @@ class _ReferralScreenState extends State<ReferralScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ═══ عدّاد الدعوات ═══
             const Text('دعواتك الناجحة', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Container(
@@ -136,7 +132,6 @@ class _ReferralScreenState extends State<ReferralScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ═══ جدول المكافآت ═══
             const Text('مكافآتك (حسب دورك)', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text('دورك: ${_getRoleLabel(role)}', style: const TextStyle(color: AppColors.goldLight, fontSize: 12, fontWeight: FontWeight.bold)),
@@ -189,7 +184,6 @@ class _ReferralScreenState extends State<ReferralScreen> {
             }),
             const SizedBox(height: 24),
 
-            // ═══ زر المشاركة ═══
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -244,8 +238,9 @@ class _ReferralScreenState extends State<ReferralScreen> {
           {'threshold': 100, 'reward': '📖 دفتر كوبونات مجاني كامل'},
         ];
       case UserRole.stationOwner:
-      case UserRole.tanker:
-      case UserRole.driver:
+      case UserRole.factoryOwner:
+      case UserRole.tankerDriver:
+      case UserRole.distributionDriver:
         return [
           {'threshold': 10, 'reward': '💵 2 د.أ رصيد في التطبيق'},
           {'threshold': 50, 'reward': '💵 5 د.أ رصيد في التطبيق'},
@@ -253,16 +248,13 @@ class _ReferralScreenState extends State<ReferralScreen> {
         ];
       case UserRole.plumber:
       case UserRole.stationTechnician:
+      case UserRole.electrician:
+      case UserRole.partsProvider:
+      case UserRole.gasSupplier:
         return [
           {'threshold': 10, 'reward': '📌 إعلان مبوب مجاني أسبوع'},
           {'threshold': 50, 'reward': '📌 إعلان مبوب مجاني شهر'},
           {'threshold': 100, 'reward': '⭐ إعلان بريميوم مجاني شهر'},
-        ];
-      default:
-        return [
-          {'threshold': 10, 'reward': '🎁 مكافأة ترحيبية'},
-          {'threshold': 50, 'reward': '🎁 مكافأة ذهبية'},
-          {'threshold': 100, 'reward': '🏆 مكافأة كبرى'},
         ];
     }
   }
@@ -271,12 +263,14 @@ class _ReferralScreenState extends State<ReferralScreen> {
     switch (role) {
       case UserRole.customer: return 'عميل';
       case UserRole.stationOwner: return 'صاحب محطة';
-      case UserRole.factory: return 'مصنع';
-      case UserRole.driver: return 'سائق';
-      case UserRole.tanker: return 'سائق تنك';
+      case UserRole.factoryOwner: return 'مصنع';
+      case UserRole.tankerDriver: return 'سائق تنك';
+      case UserRole.distributionDriver: return 'سائق توزيع';
       case UserRole.stationTechnician: return 'فني';
       case UserRole.plumber: return 'سباك';
-      default: return 'زائر';
+      case UserRole.electrician: return 'كهربائي';
+      case UserRole.partsProvider: return 'مزود قطع غيار';
+      case UserRole.gasSupplier: return 'مزود غاز';
     }
   }
 
@@ -296,7 +290,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
 --
 📱 أُرسلت هذه الدعوة من تطبيق قطوره على هاتفي
 ''';
-    Share.share(message);
+    SharePlus.instance.share(ShareParams(text: message));
   }
 
   void _copyLink() {

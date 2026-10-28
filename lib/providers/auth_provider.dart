@@ -14,7 +14,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null || AuthManager.isLoggedIn;
   UserRole get role => _currentUser?.role ?? AuthManager.role;
   bool get isProvider => _currentUser?.isProvider ?? AuthManager.isProvider;
-  bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? AuthManager.isSuperAdmin;
+  bool get isSuperAdmin =>
+      _currentUser?.isSuperAdmin ?? AuthManager.isSuperAdmin;
 
   // ═══ تسجيل دخول عادي ═══
   Future<bool> login({
@@ -62,6 +63,7 @@ class AuthProvider extends ChangeNotifier {
     required String firstName,
     required String phone,
     required String serviceType,
+    UserRole role = UserRole.stationOwner,
     String? id,
   }) async {
     _isLoading = true;
@@ -75,13 +77,14 @@ class AuthProvider extends ChangeNotifier {
         firstName: firstName,
         phone: phone,
         serviceType: serviceType,
+        role: role,
       );
 
       _currentUser = UserModel(
         id: id ?? 'provider_${DateTime.now().millisecondsSinceEpoch}',
         firstName: firstName,
         phone: phone,
-        role: UserRole.stationOwner,
+        role: role,
         isProvider: true,
         providerServiceType: serviceType,
         createdAt: DateTime.now(),
@@ -100,7 +103,8 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ═══ تسجيل دخول كأدمن ═══
-  Future<bool> loginAsSuperAdmin({int level = AuthManager.LEVEL_SUPER_ADMIN}) async {
+  Future<bool> loginAsSuperAdmin(
+      {int level = AuthManager.levelSuperAdmin}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -113,7 +117,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = UserModel(
         id: 'admin_${DateTime.now().millisecondsSinceEpoch}',
         firstName: 'المدير العام',
-        phone: '000000000',
+        phone: '', // ✅ تم التعديل: إزالة الرقم الوهمي
         role: UserRole.customer,
         isSuperAdmin: true,
         adminLevel: level,
@@ -134,7 +138,7 @@ class AuthProvider extends ChangeNotifier {
 
   // ═══ تسجيل خروج ═══
   Future<void> logout() async {
-    AuthManager.logout();
+    await AuthManager.logout();
     _currentUser = null;
     _errorMessage = null;
     notifyListeners();

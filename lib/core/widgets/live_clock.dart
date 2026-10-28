@@ -22,11 +22,7 @@ class _LiveStatusBarState extends State<LiveStatusBar>
 
   // ── بيانات حية (تم تحويلها من static const إلى متغيرات قابلة للتحديث) ──
   String _city = 'جاري تحديد الموقع...';
-  String _country = 'الأردن';
-  String _tempC = '--';
-  String _weatherLabel = 'جاري التحميل';
-  String _humidity = '--';
-  String _windKmh = '--';
+  final String _tempC = '--';
   double _lat = 0.0;
   double _lng = 0.0;
 

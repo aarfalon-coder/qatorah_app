@@ -164,8 +164,8 @@ class SplashAdService {
 
       final activeAds = ads.where((a) => a.isCurrentlyActive).length;
       final totalImpressions =
-          ads.fold<int>(0, (sum, a) => sum + a.currentImpressions);
-      final totalClicks = ads.fold<int>(0, (sum, a) => sum + a.clicks);
+          ads.fold<int>(0, (acc, a) => acc + a.currentImpressions);
+      final totalClicks = ads.fold<int>(0, (acc, a) => acc + a.clicks);
 
       return {
         'total': ads.length,

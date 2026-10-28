@@ -78,6 +78,9 @@ class TechnicianModel {
   final double distanceKm;
   final bool isAvailable;
   final String phone;
+  final bool isSuspended;
+  final String nextAvailableTime;
+  final int activeRequestsCount;
 
   const TechnicianModel({
     required this.id,
@@ -88,97 +91,42 @@ class TechnicianModel {
     required this.distanceKm,
     required this.isAvailable,
     required this.phone,
+    this.isSuspended = false,
+    this.nextAvailableTime = 'متاح الآن',
+    this.activeRequestsCount = 0,
   });
-}
 
-class TechnicianCatalog {
-  static final List<TechnicianModel> all = [
-    const TechnicianModel(
-        id: 't1',
-        name: 'أبو أحمد السباك',
-        specialty: TechnicianSpecialty.plumber,
-        rating: 4.8,
-        reviewCount: 124,
-        distanceKm: 1.2,
-        isAvailable: true,
-        phone: '0791111111'),
-    const TechnicianModel(
-        id: 't2',
-        name: 'مؤسسة النور للسباكة',
-        specialty: TechnicianSpecialty.plumber,
-        rating: 4.5,
-        reviewCount: 89,
-        distanceKm: 2.5,
-        isAvailable: true,
-        phone: '0792222222'),
-    const TechnicianModel(
-        id: 't3',
-        name: 'أبو خالد - فني محطات',
-        specialty: TechnicianSpecialty.stationTech,
-        rating: 4.9,
-        reviewCount: 56,
-        distanceKm: 3.0,
-        isAvailable: true,
-        phone: '0793333333'),
-    const TechnicianModel(
-        id: 't4',
-        name: 'شركة المياه المتقدمة',
-        specialty: TechnicianSpecialty.stationTech,
-        rating: 4.7,
-        reviewCount: 42,
-        distanceKm: 4.5,
-        isAvailable: false,
-        phone: '0794444444'),
-    const TechnicianModel(
-        id: 't5',
-        name: 'كهربائي أبو محمد',
-        specialty: TechnicianSpecialty.electrician,
-        rating: 4.6,
-        reviewCount: 78,
-        distanceKm: 1.8,
-        isAvailable: true,
-        phone: '0795555555'),
-    const TechnicianModel(
-        id: 't6',
-        name: 'م. سامي الصيادي',
-        specialty: TechnicianSpecialty.maintenanceEng,
-        rating: 4.9,
-        reviewCount: 34,
-        distanceKm: 5.0,
-        isAvailable: true,
-        phone: '0796666666'),
-    const TechnicianModel(
-        id: 't7',
-        name: 'م. ليث الأتمتة',
-        specialty: TechnicianSpecialty.plcProgrammer,
-        rating: 5.0,
-        reviewCount: 18,
-        distanceKm: 7.2,
-        isAvailable: true,
-        phone: '0797777777'),
-    const TechnicianModel(
-        id: 't8',
-        name: 'مختبر الجودة المركزي',
-        specialty: TechnicianSpecialty.waterLabTech,
-        rating: 4.8,
-        reviewCount: 27,
-        distanceKm: 6.0,
-        isAvailable: true,
-        phone: '0798888888'),
-    const TechnicianModel(
-        id: 't9',
-        name: 'مستودع قطع الغيار',
-        specialty: TechnicianSpecialty.spareParts,
-        rating: 4.4,
-        reviewCount: 63,
-        distanceKm: 3.5,
-        isAvailable: true,
-        phone: '0799999999'),
-  ];
+  factory TechnicianModel.fromMap(Map<String, dynamic> map, String id) {
+    return TechnicianModel(
+      id: id,
+      name: map['name'] ?? 'فني بدون اسم',
+      specialty: TechnicianSpecialty.values.firstWhere(
+        (e) => e.name == map['specialty'],
+        orElse: () => TechnicianSpecialty.plumber,
+      ),
+      rating: (map['rating'] ?? 0.0).toDouble(),
+      reviewCount: map['review_count'] ?? 0,
+      distanceKm: (map['distance_km'] ?? 0.0).toDouble(),
+      isAvailable: map['is_available'] ?? true,
+      phone: map['phone'] ?? '',
+      isSuspended: map['is_suspended'] ?? false,
+      nextAvailableTime: map['next_available_time'] ?? 'متاح الآن',
+      activeRequestsCount: map['active_requests_count'] ?? 0,
+    );
+  }
 
-  static List<TechnicianModel> bySpecialty(TechnicianSpecialty specialty) {
-    final list = all.where((t) => t.specialty == specialty).toList();
-    list.sort((a, b) => b.rating.compareTo(a.rating));
-    return list;
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'specialty': specialty.name,
+      'rating': rating,
+      'review_count': reviewCount,
+      'distance_km': distanceKm,
+      'is_available': isAvailable,
+      'phone': phone,
+      'is_suspended': isSuspended,
+      'next_available_time': nextAvailableTime,
+      'active_requests_count': activeRequestsCount,
+    };
   }
 }

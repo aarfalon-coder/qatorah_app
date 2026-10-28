@@ -49,8 +49,9 @@ class PlaceholderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 40),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      AuthManager.logout();
+                    onPressed: () async {
+                      await AuthManager.logout();
+                      if (!context.mounted) return;
                       Navigator.pushNamedAndRemoveUntil(
                           context, '/', (route) => false); // أو إعادة التشغيل
                     },

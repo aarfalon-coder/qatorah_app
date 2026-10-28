@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
-import 'package:qatorah_app/managers/role_manager.dart';
 import 'package:qatorah_app/screens/customer/customer_home.dart';
-// ✅ هذا هو السطر المصحح (بدون مجلد provider/)
-import 'package:qatorah_app/screens/provider_home.dart';
+// ✅ تم تصحيح مسار استيراد شاشة المزود بناءً على هيكل المشروع الفعلي
+import 'package:qatorah_app/screens/provider/provider_home_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -64,7 +63,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     title: 'عميل',
                     subtitle: 'طلب مياه، غاز، تنك، صيانة',
                     color: AppColors.crystalBlue,
-                    onTap: () => _selectRole(context, RoleManager.customer),
+                    onTap: () => _selectRole(context, 'customer'),
                   ),
                   const SizedBox(height: 16),
 
@@ -75,7 +74,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     title: 'مزود خدمة',
                     subtitle: 'إدارة الطلبات، السائقين، الأرباح',
                     color: AppColors.goldLight,
-                    onTap: () => _selectRole(context, RoleManager.provider),
+                    onTap: () => _selectRole(context, 'provider'),
                   ),
                 ],
               ),
@@ -143,17 +142,16 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 
   Future<void> _selectRole(BuildContext context, String role) async {
-    await RoleManager.setRole(role);
-    
+    // ✅ تم إزالة اعتماد RoleManager واستبداله بالمنطق المباشر
     if (!context.mounted) return;
 
     // الانتقال للشاشة المناسبة
-    if (role == RoleManager.customer) {
+    if (role == 'customer') {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const CustomerHomeScreen()),
       );
-    } else if (role == RoleManager.provider) {
+    } else if (role == 'provider') {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ProviderHomeScreen()),
@@ -161,4 +159,3 @@ class RoleSelectionScreen extends StatelessWidget {
     }
   }
 }
-

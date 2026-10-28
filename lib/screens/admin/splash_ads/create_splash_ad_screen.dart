@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
 import 'package:qatorah_app/models/splash_ad_model.dart';
@@ -31,10 +34,24 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
   List<String> _targetUserTypes = [];
   bool _isActive = true;
   bool _isLoading = false;
+  bool _isUploading = false;
+
+  // ✅ المتغير الجديد لتحديد مكان العرض
+  String _adType = 'market'; // 'market', 'governorates', 'hosting', 'kingdom'
 
   final List<String> _availableRegions = [
-    'عمان', 'الزرقاء', 'إربد', 'العقبة', 'المفرق',
-    'مادبا', 'جرش', 'عجلون', 'الكرك', 'معان', 'الطفيلة', 'البحر الميت',
+    'عمان',
+    'الزرقاء',
+    'إربد',
+    'العقبة',
+    'المفرق',
+    'مادبا',
+    'جرش',
+    'عجلون',
+    'الكرك',
+    'معان',
+    'الطفيلة',
+    'البحر الميت',
   ];
 
   final List<String> _availableUserTypes = ['customer', 'provider'];
@@ -58,6 +75,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
       _targetRegions = List.from(ad.targetRegions);
       _targetUserTypes = List.from(ad.targetUserTypes);
       _isActive = ad.isActive;
+      _adType = ad.adType; // ✅ استرجاع النوع عند التعديل
     }
   }
 
@@ -73,10 +91,110 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
     super.dispose();
   }
 
+  // ✅ دالة رفع الصورة (مُحسّنة مع سجل الأخطاء)
+  Future<void> _pickAndUploadImage() async {
+    try {
+      debugPrint('📸 جاري فتح معرض الصور لاختيار صورة...');
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (pickedFile == null) {
+        debugPrint('⚠️ تم إلغاء اختيار الصورة');
+        return;
+      }
+
+      setState(() => _isUploading = true);
+      debugPrint('⬆️ جاري رفع الصورة: ${pickedFile.name}');
+
+      final file = File(pickedFile.path);
+      final fileName =
+          'splash_ads/img_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = FirebaseStorage.instance.ref().child(fileName);
+
+      await ref.putFile(file);
+      final url = await ref.getDownloadURL();
+
+      if (!mounted) return;
+      setState(() {
+        _mediaUrlCtrl.text = url;
+        _isUploading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('✅ تم رفع الصورة بنجاح'),
+            backgroundColor: AppColors.refillGreen),
+      );
+      debugPrint('✅ تم رفع الصورة بنجاح: $url');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      debugPrint('❌ خطأ فادح في رفع الصورة: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('❌ فشل رفع الصورة: $e'),
+            backgroundColor: AppColors.plumberRed),
+      );
+    }
+  }
+
+  // ✅ دالة رفع الفيديو (مُحسّنة)
+  Future<void> _pickAndUploadVideo() async {
+    try {
+      debugPrint('🎬 جاري فتح معرض الفيديو...');
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(seconds: 30),
+      );
+
+      if (pickedFile == null) {
+        debugPrint('⚠️ تم إلغاء اختيار الفيديو');
+        return;
+      }
+
+      setState(() => _isUploading = true);
+      debugPrint('⬆️ جاري رفع الفيديو: ${pickedFile.name}');
+
+      final file = File(pickedFile.path);
+      final fileName =
+          'splash_ads/vid_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final ref = FirebaseStorage.instance.ref().child(fileName);
+
+      await ref.putFile(file);
+      final url = await ref.getDownloadURL();
+
+      if (!mounted) return;
+      setState(() {
+        _mediaUrlCtrl.text = url;
+        _isUploading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('✅ تم رفع الفيديو بنجاح'),
+            backgroundColor: AppColors.refillGreen),
+      );
+      debugPrint('✅ تم رفع الفيديو بنجاح: $url');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      debugPrint('❌ خطأ فادح في رفع الفيديو: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('❌ فشل رفع الفيديو: $e'),
+            backgroundColor: AppColors.plumberRed),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_mediaUrlCtrl.text.trim().isEmpty) {
-      _showError('أدخل رابط الصورة / الفيديو');
+      _showError('أدخل رابط الوسائط أو ارفع صورة/فيديو');
       return;
     }
     if (_targetRegions.isEmpty) {
@@ -108,6 +226,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
         isActive: _isActive,
         advertiserName: _advertiserCtrl.text.trim(),
         advertiserPhone: _phoneCtrl.text.trim(),
+        adType: _adType, // ✅ حفظ نوع الإعلان المختار
         createdAt: widget.existingAd?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
         createdBy: AuthManager.firebaseUid ?? 'admin',
@@ -122,11 +241,10 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.existingAd == null
-              ? '✅ تم إنشاء الإعلان'
-              : '✅ تم تحديث الإعلان'),
-          backgroundColor: AppColors.refillGreen,
-        ),
+            content: Text(widget.existingAd == null
+                ? '✅ تم إنشاء الإعلان'
+                : '✅ تم تحديث الإعلان'),
+            backgroundColor: AppColors.refillGreen),
       );
       Navigator.pop(context);
     } catch (e) {
@@ -139,10 +257,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: AppColors.plumberRed,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: AppColors.plumberRed),
     );
   }
 
@@ -170,6 +285,39 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
               _sectionTitle('📝 المعلومات الأساسية'),
               _buildField(_titleCtrl, 'عنوان الإعلان', Icons.title),
               const SizedBox(height: 12),
+
+              // ✅ القائمة المنسدلة الجديدة لتحديد مكان العرض
+              DropdownButtonFormField<String>(
+                initialValue: _adType,
+                decoration: InputDecoration(
+                  labelText: 'مكان عرض الإعلان',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  prefixIcon:
+                      const Icon(Icons.category, color: AppColors.goldLight),
+                  filled: true,
+                  fillColor: const Color(0xFF1A1F2E),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                dropdownColor: const Color(0xFF1A1F2E),
+                style: const TextStyle(color: Colors.white),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'market', child: Text('السوق الرئيسي (مجاني)')),
+                  DropdownMenuItem(
+                      value: 'governorates',
+                      child: Text('شريط المحافظات (مدفوع)')),
+                  DropdownMenuItem(
+                      value: 'hosting', child: Text('إعلان استضافة مدفوع')),
+                  DropdownMenuItem(
+                      value: 'kingdom', child: Text('إعلان المملكة')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => _adType = value);
+                },
+              ),
+
+              const SizedBox(height: 12),
               _buildField(_descCtrl, 'الوصف (اختياري)', Icons.description,
                   maxLines: 3),
               const SizedBox(height: 12),
@@ -180,7 +328,38 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
 
               const SizedBox(height: 24),
               _sectionTitle('🎬 الوسائط'),
-              _buildField(_mediaUrlCtrl, 'رابط الصورة / الفيديو', Icons.link),
+
+              if (_isUploading)
+                const Center(
+                    child:
+                        CircularProgressIndicator(color: AppColors.goldLight))
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildField(
+                          _mediaUrlCtrl, 'رابط الصورة / الفيديو', Icons.link),
+                    ),
+                    const SizedBox(width: 8),
+                    // ✅ زر رفع ذكي يتغير حسب نوع الوسائط
+                    IconButton(
+                      onPressed: _mediaType == 'image'
+                          ? _pickAndUploadImage
+                          : _pickAndUploadVideo,
+                      icon: Icon(
+                        _mediaType == 'image'
+                            ? Icons.photo_library
+                            : Icons.video_library,
+                        color: AppColors.crystalBlue,
+                        size: 28,
+                      ),
+                      tooltip: _mediaType == 'image'
+                          ? 'رفع صورة من المعرض'
+                          : 'رفع فيديو من المعرض',
+                    ),
+                  ],
+                ),
+
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -206,10 +385,8 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
 
               const SizedBox(height: 24),
               _sectionTitle('⏰ مدة العرض'),
-              Text(
-                'المدة: $_durationSeconds ثانية',
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-              ),
+              Text('المدة: $_durationSeconds ثانية',
+                  style: const TextStyle(color: Colors.white, fontSize: 14)),
               Slider(
                 value: _durationSeconds.toDouble(),
                 min: 1,
@@ -218,8 +395,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
                 activeColor: AppColors.goldLight,
                 inactiveColor: Colors.white24,
                 label: '$_durationSeconds ث',
-                onChanged: (v) =>
-                    setState(() => _durationSeconds = v.round()),
+                onChanged: (v) => setState(() => _durationSeconds = v.round()),
               ),
 
               const SizedBox(height: 24),
@@ -227,29 +403,19 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _dateButton(
-                      'من',
-                      _startDate,
-                      (date) => setState(() => _startDate = date),
-                    ),
-                  ),
+                      child: _dateButton('من', _startDate,
+                          (date) => setState(() => _startDate = date))),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _dateButton(
-                      'إلى',
-                      _endDate,
-                      (date) => setState(() => _endDate = date),
-                    ),
-                  ),
+                      child: _dateButton('إلى', _endDate,
+                          (date) => setState(() => _endDate = date))),
                 ],
               ),
 
               const SizedBox(height: 24),
               _sectionTitle('🎯 الاستهداف'),
-              const Text(
-                'المناطق (اختر واحدة أو أكثر):',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
+              const Text('المناطق (اختر واحدة أو أكثر):',
+                  style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -259,21 +425,14 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
                   return FilterChip(
                     label: Text(region),
                     selected: selected,
-                    selectedColor:
-                        AppColors.goldLight.withValues(alpha: 0.2),
+                    selectedColor: AppColors.goldLight.withValues(alpha: 0.2),
                     checkmarkColor: AppColors.goldLight,
                     labelStyle: TextStyle(
-                      color: selected
-                          ? AppColors.goldLight
-                          : Colors.white70,
-                      fontSize: 12,
-                    ),
+                        color: selected ? AppColors.goldLight : Colors.white70,
+                        fontSize: 12),
                     backgroundColor: const Color(0xFF1A1F2E),
                     side: BorderSide(
-                      color: selected
-                          ? AppColors.goldLight
-                          : Colors.white24,
-                    ),
+                        color: selected ? AppColors.goldLight : Colors.white24),
                     onSelected: (val) {
                       setState(() {
                         if (val) {
@@ -288,10 +447,8 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
               ),
 
               const SizedBox(height: 16),
-              const Text(
-                'نوع المستخدم:',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
+              const Text('نوع المستخدم:',
+                  style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -301,21 +458,16 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
                   return FilterChip(
                     label: Text(label),
                     selected: selected,
-                    selectedColor:
-                        AppColors.crystalBlue.withValues(alpha: 0.2),
+                    selectedColor: AppColors.crystalBlue.withValues(alpha: 0.2),
                     checkmarkColor: AppColors.crystalBlue,
                     labelStyle: TextStyle(
-                      color: selected
-                          ? AppColors.crystalBlue
-                          : Colors.white70,
-                      fontSize: 12,
-                    ),
+                        color:
+                            selected ? AppColors.crystalBlue : Colors.white70,
+                        fontSize: 12),
                     backgroundColor: const Color(0xFF1A1F2E),
                     side: BorderSide(
-                      color: selected
-                          ? AppColors.crystalBlue
-                          : Colors.white24,
-                    ),
+                        color:
+                            selected ? AppColors.crystalBlue : Colors.white24),
                     onSelected: (val) {
                       setState(() {
                         if (val) {
@@ -331,22 +483,20 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
 
               const SizedBox(height: 24),
               _sectionTitle('🔗 الإجراء'),
-              _buildField(_targetUrlCtrl,
-                  'الرابط (WhatsApp / Website / Phone)',
-                  Icons.link, keyboard: TextInputType.url),
+              _buildField(_targetUrlCtrl, 'الرابط (WhatsApp / Website / Phone)',
+                  Icons.link,
+                  keyboard: TextInputType.url),
               const SizedBox(height: 12),
-              _buildField(_ctaCtrl, 'نص الزر (مثلاً: اتصل الآن)',
-                  Icons.touch_app),
+              _buildField(
+                  _ctaCtrl, 'نص الزر (مثلاً: اتصل الآن)', Icons.touch_app),
 
               const SizedBox(height: 24),
               _sectionTitle('📌 الحالة'),
               SwitchListTile(
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
-                title: const Text(
-                  'تفعيل الإعلان فوراً',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
+                title: const Text('تفعيل الإعلان (موافقة الأدمن)',
+                    style: TextStyle(color: Colors.white, fontSize: 14)),
                 activeThumbColor: AppColors.refillGreen,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -359,10 +509,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
+                            color: Colors.white, strokeWidth: 2))
                     : const Icon(Icons.save),
                 label: Text(
                   _isLoading
@@ -378,8 +525,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
                   foregroundColor: const Color(0xFF0A0E1A),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
 
@@ -394,14 +540,11 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: AppColors.goldLight,
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      child: Text(title,
+          style: const TextStyle(
+              color: AppColors.goldLight,
+              fontSize: 15,
+              fontWeight: FontWeight.bold)),
     );
   }
 
@@ -412,32 +555,43 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
     TextInputType? keyboard,
     int maxLines = 1,
   }) {
-    return TextFormField(
-      controller: ctrl,
-      style: const TextStyle(color: Colors.white),
-      keyboardType: keyboard,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        prefixIcon: Icon(icon, color: AppColors.goldLight),
-        filled: true,
-        fillColor: const Color(0xFF1A1F2E),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-      ),
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: ctrl,
+      builder: (context, value, child) {
+        return TextFormField(
+          controller: ctrl,
+          style: const TextStyle(color: Colors.white),
+          keyboardType: keyboard,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(color: Colors.white70),
+            prefixIcon: Icon(icon, color: AppColors.goldLight),
+            suffixIcon: value.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, color: AppColors.plumberRed),
+                    onPressed: () {
+                      ctrl.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: const Color(0xFF1A1F2E),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildChoiceChip(
-    String label,
-    bool selected,
-    VoidCallback onTap,
-    IconData icon,
-  ) {
+      String label, bool selected, VoidCallback onTap, IconData icon) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -448,8 +602,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
               : const Color(0xFF1A1F2E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.goldLight : Colors.white24,
-          ),
+              color: selected ? AppColors.goldLight : Colors.white24),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -461,10 +614,9 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
             Text(
               label,
               style: TextStyle(
-                color: selected ? AppColors.goldLight : Colors.white70,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+                  color: selected ? AppColors.goldLight : Colors.white70,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13),
             ),
           ],
         ),
@@ -473,10 +625,7 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
   }
 
   Widget _dateButton(
-    String label,
-    DateTime date,
-    ValueChanged<DateTime> onChanged,
-  ) {
+      String label, DateTime date, ValueChanged<DateTime> onChanged) {
     return GestureDetector(
       onTap: () async {
         final picked = await showDatePicker(
@@ -509,19 +658,14 @@ class _CreateSplashAdScreenState extends State<CreateSplashAdScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.goldLight,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(label,
+                style: const TextStyle(
+                    color: AppColors.goldLight,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(
-              '${date.day}/${date.month}/${date.year}',
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
+            Text('${date.day}/${date.month}/${date.year}',
+                style: const TextStyle(color: Colors.white, fontSize: 14)),
           ],
         ),
       ),

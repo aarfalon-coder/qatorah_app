@@ -1,15 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../models/coupon_model.dart';
-// import '../services/firebase_service.dart'; // ??????
+// import '../services/firebase_service.dart'; // ✅ فك التعليق عند الربط
 
 /// ═══════════════════════════════════════════════════════════
 /// CouponManager — إدارة الكوبونات والدفاتر
 /// ═══════════════════════════════════════════════════════════
 
 class CouponManager extends ChangeNotifier {
-  // FirebaseService ????? ?????? - ?????? Mock
-
-  // ═══ البيانات المحلية (Mock - لاحقاً من Firestore) ═══
+  // ═══ البيانات المحلية ═══
   final List<CouponBookModel> _myBooks = [];
   final List<CouponModel> _myCoupons = [];
 
@@ -44,17 +42,19 @@ class CouponManager extends ChangeNotifier {
     _loadMyCoupons();
   }
 
-  // ═══ تحميل كوبوناتي (Mock) ═══
+  // ═══ تحميل كوبوناتي ═══
   Future<void> _loadMyCoupons() async {
+    if (_customerId.isEmpty) return;
+
     _isLoading = true;
     notifyListeners();
 
     try {
       // TODO: Firebase - لاحقاً نجلب من Firestore
-      // الآن: بيانات تجريبية
-      if (_myBooks.isEmpty && _customerId.isNotEmpty) {
-        _myBooks.addAll(_mockBooks());
-      }
+      // final books = await FirebaseService.getCouponBooks(_customerId);
+      // _myBooks.clear();
+      // _myBooks.addAll(books);
+      
       _error = null;
     } catch (e) {
       _error = 'فشل تحميل الكوبونات: $e';
@@ -79,7 +79,6 @@ class CouponManager extends ChangeNotifier {
       final now = DateTime.now();
       final bookId = 'BOOK-${now.millisecondsSinceEpoch}';
 
-      // 1. إنشاء الدفتر
       final book = CouponBookModel(
         id: bookId,
         customerId: _customerId,
@@ -93,7 +92,7 @@ class CouponManager extends ChangeNotifier {
         isActive: true,
       );
 
-      // 2. إنشاء الكوبونات
+      final List<CouponModel> newCoupons = [];
       for (int i = 1; i <= bookType.totalCoupons; i++) {
         final coupon = CouponModel(
           id: 'CPN-$bookId-$i',
@@ -105,15 +104,15 @@ class CouponManager extends ChangeNotifier {
           status: CouponStatus.active,
           createdAt: now,
         );
-        _myCoupons.add(coupon);
+        newCoupons.add(coupon);
       }
 
-      // 3. إضافة الدفتر
       _myBooks.insert(0, book);
+      _myCoupons.addAll(newCoupons);
 
       // TODO: Firebase - حفظ في Firestore
-      // await _firebase.saveCouponBook(book);
-      // await _firebase.saveCoupons(coupons);
+      // await FirebaseService.saveCouponBook(book);
+      // await FirebaseService.saveCoupons(newCoupons);
 
       _error = null;
       notifyListeners();
@@ -130,14 +129,10 @@ class CouponManager extends ChangeNotifier {
 
   double _couponValue(CouponType type) {
     switch (type) {
-      case CouponType.water:
-        return 1.0; // 1 دينار
-      case CouponType.gas:
-        return 7.0; // 7 دنانير
-      case CouponType.maintenance:
-        return 5.0; // 5 دنانير
-      case CouponType.mixed:
-        return 2.5;
+      case CouponType.water: return 1.0;
+      case CouponType.gas: return 7.0;
+      case CouponType.maintenance: return 5.0;
+      case CouponType.mixed: return 2.5;
     }
   }
 
@@ -161,7 +156,6 @@ class CouponManager extends ChangeNotifier {
     }
 
     try {
-      // 1. تحديث الكوبون
       final used = coupon.copyWith(
         status: CouponStatus.used,
         usedAt: DateTime.now(),
@@ -169,7 +163,6 @@ class CouponManager extends ChangeNotifier {
       );
       _myCoupons[index] = used;
 
-      // 2. خصم من الدفتر
       final bookIndex = _myBooks.indexWhere((b) => b.id == coupon.bookId);
       if (bookIndex != -1) {
         final book = _myBooks[bookIndex];
@@ -181,7 +174,7 @@ class CouponManager extends ChangeNotifier {
       }
 
       // TODO: Firebase - تحديث في Firestore
-      // await _firebase.updateCoupon(used);
+      // await FirebaseService.updateCoupon(used);
 
       _error = null;
       notifyListeners();
@@ -193,7 +186,6 @@ class CouponManager extends ChangeNotifier {
     }
   }
 
-  // ═══ حذف دفتر (للمرحلة الإدارية) ═══
   Future<bool> deleteBook(String bookId) async {
     try {
       _myBooks.removeWhere((b) => b.id == bookId);
@@ -208,54 +200,18 @@ class CouponManager extends ChangeNotifier {
     }
   }
 
-  // ═══ تنظيف الأخطاء ═══
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  // ═══ بيانات تجريبية (Mock) ═══
-  List<CouponBookModel> _mockBooks() {
-    final now = DateTime.now();
-    return [
-      CouponBookModel(
-        id: 'BOOK-DEMO-001',
-        customerId: _customerId,
-        customerName: _customerName,
-        type: CouponType.water,
-        totalCoupons: 10,
-        remainingCoupons: 7,
-        price: 5.0,
-        purchasedAt: now.subtract(const Duration(days: 15)),
-        expiresAt: now.add(const Duration(days: 75)),
-        isActive: true,
-      ),
-      CouponBookModel(
-        id: 'BOOK-DEMO-002',
-        customerId: _customerId,
-        customerName: _customerName,
-        type: CouponType.gas,
-        totalCoupons: 5,
-        remainingCoupons: 5,
-        price: 35.0,
-        purchasedAt: now.subtract(const Duration(days: 3)),
-        expiresAt: now.add(const Duration(days: 87)),
-        isActive: true,
-      ),
-    ];
-  }
-
-  // ═══ تحقق من وجود دفتر ═══
   bool hasActiveBook(CouponType type) {
     return activeBooks.any((b) => b.type == type && b.canUse);
   }
 
-  // ═══ استخدام كوبون من نوع معين ═══
   CouponModel? getFirstActiveCoupon(CouponType type) {
     try {
-      return _myCoupons.firstWhere(
-        (c) => c.type == type && c.isActive,
-      );
+      return _myCoupons.firstWhere((c) => c.type == type && c.isActive);
     } catch (_) {
       return null;
     }

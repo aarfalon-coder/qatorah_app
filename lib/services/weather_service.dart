@@ -9,18 +9,14 @@ class WeatherService {
       debugPrint('️ جاري جلب الطقس للإحداثيات: $lat, $lon');
       
       WeatherFactory wf = WeatherFactory(apiKey, language: Language.ARABIC);
-      Weather? weather = await wf.currentWeatherByLocation(lat, lon);
-      
-      if (weather != null) {
-        debugPrint('✅ الطقس تم جلبه بنجاح:');
-        debugPrint('   درجة الحرارة: ${weather.temperature?.celsius}°C');
-        debugPrint('   الوصف: ${weather.weatherDescription}');
-        debugPrint('   الرطوبة: ${weather.humidity}%');
-        debugPrint('   الرياح: ${weather.windSpeed} كم/س');
-      } else {
-        debugPrint('️ الطقس returned null');
-      }
-      
+      Weather weather = await wf.currentWeatherByLocation(lat, lon);
+
+      debugPrint('✅ الطقس تم جلبه بنجاح:');
+      debugPrint('   درجة الحرارة: ${weather.temperature?.celsius}°C');
+      debugPrint('   الوصف: ${weather.weatherDescription}');
+      debugPrint('   الرطوبة: ${weather.humidity}%');
+      debugPrint('   الرياح: ${weather.windSpeed} كم/س');
+
       return weather;
     } catch (e, stackTrace) {
       debugPrint('❌ خطأ فادح في جلب الطقس: $e');

@@ -300,8 +300,8 @@ class CashReceiptWidget extends StatelessWidget {
   Widget _buildDashedLine() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final dashWidth = 5.0;
-        final dashSpace = 3.0;
+        const dashWidth = 5.0;
+        const dashSpace = 3.0;
         final dashCount = (constraints.maxWidth / (dashWidth + dashSpace)).floor();
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

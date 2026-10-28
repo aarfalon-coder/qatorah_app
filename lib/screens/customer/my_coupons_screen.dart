@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/core/widgets/coupon_info_dialog.dart';
@@ -14,8 +14,6 @@ class MyCouponsScreen extends StatefulWidget {
 }
 
 class _MyCouponsScreenState extends State<MyCouponsScreen> {
-  bool _hasSeenInfo = false;
-
   @override
   void initState() {
     super.initState();
@@ -30,7 +28,6 @@ class _MyCouponsScreenState extends State<MyCouponsScreen> {
         if (mounted) {
           showCouponBookInfo(context);
           await prefs.setBool('coupon_info_seen', true);
-          setState(() => _hasSeenInfo = true);
         }
       });
     }
@@ -390,8 +387,8 @@ class _MyCouponsScreenState extends State<MyCouponsScreen> {
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
+                const SnackBar(
+                  content: Text(
                       'تم تفعيل الكوبون ✅ - سيتم تطبيقه على الطلب القادم'),
                   backgroundColor: AppColors.refillGreen,
                   behavior: SnackBarBehavior.floating,

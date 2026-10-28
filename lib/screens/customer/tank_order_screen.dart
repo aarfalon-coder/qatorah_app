@@ -4,19 +4,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
+import 'package:qatorah_app/managers/auth_manager.dart';
 import 'package:qatorah_app/models/order_model.dart';
 import 'package:qatorah_app/services/location_service.dart';
 import 'package:qatorah_app/services/order_service.dart';
 
 class TankOrderScreen extends StatefulWidget {
-  final int tankSize;
-  final double tankPrice;
-
-  const TankOrderScreen({
-    super.key,
-    required this.tankSize,
-    required this.tankPrice,
-  });
+  const TankOrderScreen({super.key});
 
   @override
   State<TankOrderScreen> createState() => _TankOrderScreenState();
@@ -28,19 +22,24 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
   String _currentAddress = 'جاري تحديد موقعك...';
   bool _isLoading = true;
   bool _isRequesting = false;
-  bool _driverAssigned = false;
 
-  final Map<String, dynamic> _driverData = {
-    'name': 'محمد أحمد',
-    'phone': '0791234567',
-    'car': 'شاحنة تنك مياه - أزرق',
-    'rating': 4.9,
-    'distance': 1.5,
-    'etaMinutes': 8,
-  };
+  String _waterType = 'صالحة للشرب';
+  String _tankSize = '6 متر';
+  double _tankPrice = 19.0; // 🆕 السعر الافتراضي
+  final TextEditingController _notesController = TextEditingController();
 
   List<Marker> _truckMarkers = [];
   Timer? _addressDebounce;
+
+  //  قائمة التنكات مع الأسعار
+  final List<Map<String, dynamic>> _tankOptions = [
+    {'size': '3 متر', 'price': 10.0},
+    {'size': '4 متر', 'price': 13.0},
+    {'size': '6 متر', 'price': 19.0},
+    {'size': '8 متر', 'price': 25.0},
+    {'size': '10 متر', 'price': 31.0},
+    {'size': '20 متر', 'price': 61.0},
+  ];
 
   @override
   void initState() {
@@ -51,6 +50,7 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
   @override
   void dispose() {
     _addressDebounce?.cancel();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -58,9 +58,8 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
     try {
       Position pos = await LocationService.getCurrentPosition();
       String addr = await LocationService.getAddressFromCoordinates(
-        pos.latitude,
-        pos.longitude,
-      );
+          pos.latitude, pos.longitude);
+      if (!mounted) return;
       setState(() {
         _currentLocation = LatLng(pos.latitude, pos.longitude);
         _currentAddress = addr;
@@ -70,7 +69,7 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
       _generateNearbyTrucks();
     } catch (e) {
       setState(() {
-        _currentAddress = 'تعذر تحديد الموقع - حرك الخريطة';
+        _currentAddress = 'تعذر تحديد الموقع - يرجى تحريك الخريطة';
         _isLoading = false;
       });
     }
@@ -79,20 +78,19 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
   void _generateNearbyTrucks() {
     _truckMarkers = [
       Marker(
-        point: LatLng(_currentLocation.latitude + 0.01, _currentLocation.longitude + 0.008),
-        width: 40, height: 40,
-        child: const Icon(Icons.local_shipping, color: AppColors.tankCyan, size: 35),
-      ),
+          point: LatLng(_currentLocation.latitude + 0.01,
+              _currentLocation.longitude + 0.008),
+          width: 40,
+          height: 40,
+          child: const Icon(Icons.local_shipping,
+              color: AppColors.tankCyan, size: 35)),
       Marker(
-        point: LatLng(_currentLocation.latitude - 0.007, _currentLocation.longitude - 0.009),
-        width: 40, height: 40,
-        child: const Icon(Icons.local_shipping, color: AppColors.crystalBlue, size: 35),
-      ),
-      Marker(
-        point: LatLng(_currentLocation.latitude + 0.005, _currentLocation.longitude - 0.01),
-        width: 40, height: 40,
-        child: const Icon(Icons.local_shipping, color: AppColors.tankCyan, size: 35),
-      ),
+          point: LatLng(_currentLocation.latitude - 0.007,
+              _currentLocation.longitude - 0.009),
+          width: 40,
+          height: 40,
+          child: const Icon(Icons.local_shipping,
+              color: AppColors.crystalBlue, size: 35)),
     ];
   }
 
@@ -106,19 +104,12 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
           _currentAddress = 'جاري جلب العنوان...';
         });
         LocationService.getAddressFromCoordinates(
-          position.center.latitude,
-          position.center.longitude,
-        ).then((addr) {
-          if (mounted) {
-            setState(() {
-              _currentAddress = addr;
-            });
-          }
+                position.center.latitude, position.center.longitude)
+            .then((addr) {
+          if (mounted) setState(() => _currentAddress = addr);
         }).catchError((_) {
           if (mounted) {
-            setState(() {
-              _currentAddress = 'موقع محدد على الخريطة';
-            });
+            setState(() => _currentAddress = 'موقع محدد على الخريطة');
           }
         });
       });
@@ -127,315 +118,429 @@ class _TankOrderScreenState extends State<TankOrderScreen> {
 
   Future<void> _requestTank() async {
     setState(() => _isRequesting = true);
-
-    String orderId = '';
-    bool success = false;
-
     try {
       final newOrder = OrderModel(
         id: '',
-        customerId: 'customer_123',
-        customerName: 'عميل تجريبي',
-        customerPhone: '0790000000',
-        serviceType: 'tank',
+        customerId: AuthManager.firebaseUid ?? 'guest_user',
+        customerName: AuthManager.firstName.isNotEmpty
+            ? AuthManager.firstName
+            : 'عميل قطوره',
+        customerPhone:
+            AuthManager.phone.isNotEmpty ? AuthManager.phone : '0790000000',
+        serviceType: 'water_tank',
         details: {
-          'item': 'تنك مياه ${widget.tankSize} متر',
-          'size': widget.tankSize,
-          'quantity': 1,
-          'price': widget.tankPrice,
+          'water_type': _waterType,
+          'tank_size': _tankSize,
+          'tank_price': _tankPrice, // 🆕 حفظ السعر
+          'notes': _notesController.text.trim(),
         },
         latitude: _currentLocation.latitude,
         longitude: _currentLocation.longitude,
         address: _currentAddress,
         locationLabel: 'موقع GPS',
-        notes: 'طلب تنك مياه ${widget.tankSize} متر',
+        notes: _notesController.text.trim(),
         timestamp: DateTime.now(),
       );
 
-      orderId = await OrderService.createOrder(newOrder).timeout(
-        const Duration(seconds: 8),
+      final orderId = await OrderService.createOrder(newOrder).timeout(
+        const Duration(seconds: 10),
         onTimeout: () => throw Exception('انتهت مهلة الاتصال'),
       );
-      print('✅ تم الحفظ في Firestore: $orderId');
-      success = true;
-    } catch (e) {
-      print('⚠️ فشل Firestore: $e');
-      orderId = 'TANK_${DateTime.now().millisecondsSinceEpoch}';
-      success = true;
-      print('💾 تم الحفظ محلياً: $orderId');
-    }
 
-    if (!mounted) return;
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-    setState(() {
-      _isRequesting = false;
-      _driverAssigned = true;
-    });
-
-    if (!success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('تم الطلب محلياً (رقم: $orderId)'),
-          backgroundColor: AppColors.goldDark,
-        ),
+            content: Text(
+                '✅ تم إرسال طلب التنك بنجاح! (رقم: ${orderId.substring(0, 8)}...)'),
+            backgroundColor: AppColors.refillGreen),
       );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('⚠️ فشل إرسال الطلب: $e'),
+            backgroundColor: AppColors.plumberRed),
+      );
+    } finally {
+      if (mounted) setState(() => _isRequesting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('تنك مياه ${widget.tankSize} متر',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('طلب تنك مياه',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context)),
       ),
       body: Stack(
         children: [
+          // 1️⃣ الخريطة
           _isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.tankCyan))
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.tankCyan))
               : FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: _currentLocation,
-                    initialZoom: 16.0,
-                    onPositionChanged: _onMapPositionChanged,
-                  ),
+                      initialCenter: _currentLocation,
+                      initialZoom: 16.0,
+                      onPositionChanged: _onMapPositionChanged),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.qatorah',
-                    ),
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.qatorah.app'),
                     MarkerLayer(markers: _truckMarkers),
                   ],
                 ),
 
+          // 2️ الدبوس
           if (!_isLoading)
-            const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_pin, color: AppColors.plumberRed, size: 50),
-                  SizedBox(height: 8),
-                ],
+            Positioned(
+              top: screenHeight * 0.35,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                        width: 40,
+                        height: 10,
+                        decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(20))),
+                    const Icon(Icons.location_on,
+                        color: AppColors.plumberRed, size: 65),
+                    const Icon(Icons.circle, color: Colors.white, size: 18),
+                  ],
+                ),
               ),
             ),
 
-          if (!_isLoading && !_driverAssigned)
+          // 3️⃣ زر موقعي
+          if (!_isLoading)
             Positioned(
               right: 16,
-              bottom: 320,
+              top: screenHeight * 0.25,
               child: FloatingActionButton(
                 heroTag: 'myLocation',
+                mini: true,
                 backgroundColor: AppColors.crystalBlue,
                 onPressed: () async {
                   try {
                     Position pos = await LocationService.getCurrentPosition();
-                    String addr = await LocationService.getAddressFromCoordinates(
-                      pos.latitude,
-                      pos.longitude,
-                    );
+                    String addr =
+                        await LocationService.getAddressFromCoordinates(
+                            pos.latitude, pos.longitude);
+                    if (!context.mounted) return;
                     setState(() {
                       _currentLocation = LatLng(pos.latitude, pos.longitude);
                       _currentAddress = addr;
                     });
                     _mapController.move(_currentLocation, 16.0);
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تعذر تحديد الموقع')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('تعذر تحديد الموقع')));
+                    }
                   }
                 },
-                child: const Icon(Icons.my_location, color: Colors.white),
+                child: const Icon(Icons.my_location,
+                    color: Colors.white, size: 20),
               ),
             ),
 
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _driverAssigned ? _buildDriverAssignedPanel() : _buildRequestPanel(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRequestPanel() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0E1A),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -5))],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on, color: AppColors.plumberRed, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _currentAddress,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+          // 4️⃣ اللوحة السفلية القابلة للسحب
+          if (!_isLoading)
+            DraggableScrollableSheet(
+              initialChildSize: 0.40,
+              minChildSize: 0.25,
+              maxChildSize: 0.85,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0A0E1A),
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 15,
+                          offset: Offset(0, -5))
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      // مقبض السحب
+                      Center(
+                        child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                                color: Colors.white38,
+                                borderRadius: BorderRadius.circular(2))),
+                      ),
+                      const SizedBox(height: 16),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('تنك مياه ${widget.tankSize} متر',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('السعر: ${widget.tankPrice} د.أ (شامل التوصيل)',
-                      style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: AppColors.tankCyan.withValues(alpha: 0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.opacity, color: AppColors.tankCyan, size: 28),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _isRequesting ? null : _requestTank,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.tankCyan,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isRequesting
-                  ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                      SizedBox(width: 10),
-                      Text('جاري البحث عن أقرب شاحنة...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ])
-                  : const Text('اطلب التنك الآن', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      // العنوان
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on,
+                                color: AppColors.plumberRed, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(_currentAddress,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 13),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // تلميح السحب
+                      const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.swipe_up,
+                                color: AppColors.tankCyan, size: 20),
+                            SizedBox(width: 6),
+                            Text('اسحب للأعلى لإكمال الطلب',
+                                style: TextStyle(
+                                    color: AppColors.tankCyan,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 🆕 نوع المياه (Chips)
+                      const Text('نوع المياه:',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _buildChip(
+                            label: '💧 صالحة للشرب',
+                            isSelected: _waterType == 'صالحة للشرب',
+                            onTap: () =>
+                                setState(() => _waterType = 'صالحة للشرب'),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildChip(
+                            label: '💧 غير صالحة للشرب',
+                            isSelected: _waterType == 'غير صالحة للشرب',
+                            onTap: () =>
+                                setState(() => _waterType = 'غير صالحة للشرب'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 🆕 حجم التنك مع الأسعار (Grid)
+                      const Text('اختر حجم التنك:',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _tankOptions.map((tank) {
+                          final size = tank['size'] as String;
+                          final price = tank['price'] as double;
+                          final isSelected = _tankSize == size;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _tankSize = size;
+                                _tankPrice = price;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.tankCyan
+                                    : const Color(0xFF1A1F2E),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.tankCyan
+                                      : AppColors.tankCyan
+                                          .withValues(alpha: 0.3),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Text(
+                                '$size - $price د.أ',
+                                style: TextStyle(
+                                  color:
+                                      isSelected ? Colors.black : Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 🆕 ملخص السعر
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.goldLight.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color:
+                                  AppColors.goldLight.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('الإجمالي:',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold)),
+                            Text('$_tankPrice د.أ',
+                                style: const TextStyle(
+                                    color: AppColors.goldLight,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // الملاحظات
+                      const Text('ملاحظات للسائق (اختياري):',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _notesController,
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: 'مثال: الرجاء الاتصال قبل الوصول...',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1F2E),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // زر الإرسال
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: _isRequesting ? null : _requestTank,
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.tankCyan,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12))),
+                          child: _isRequesting
+                              ? const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                      SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                              color: Colors.black,
+                                              strokeWidth: 2)),
+                                      SizedBox(width: 10),
+                                      Text('جاري الإرسال...',
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold))
+                                    ])
+                              : Text('تأكيد الطلب - $_tankPrice د.أ',
+                                  style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildDriverAssignedPanel() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0E1A),
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+  // 🆕 دالة بناء Chip أنيق
+  Widget _buildChip(
+      {required String label,
+      required bool isSelected,
+      required VoidCallback onTap}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.tankCyan : const Color(0xFF1A1F2E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.tankCyan
+                  : AppColors.tankCyan.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.black : Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(color: AppColors.tankCyan.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.check_circle, color: AppColors.tankCyan, size: 20),
-              SizedBox(width: 8),
-              Text('تم قبول الطلب - الشاحنة في الطريق', style: TextStyle(color: AppColors.tankCyan, fontWeight: FontWeight.bold)),
-            ]),
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            children: [
-              Container(
-                width: 60, height: 60,
-                decoration: BoxDecoration(color: AppColors.navyDark, shape: BoxShape.circle, border: Border.all(color: AppColors.tankCyan, width: 2)),
-                child: const Icon(Icons.person, color: AppColors.tankCyan, size: 35),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_driverData['name'], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(_driverData['car'], style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: AppColors.goldLight, size: 16),
-                        const SizedBox(width: 4),
-                        Text('${_driverData['rating']} تقييم', style: const TextStyle(color: Colors.white, fontSize: 14)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.phone, color: AppColors.tankCyan, size: 30),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('جاري الاتصال بـ ${_driverData['phone']}...'))
-                  );
-                },
-              ),
-            ],
-          ),
-
-          const Divider(color: Colors.white24, height: 30),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _infoBox('المسافة', '${_driverData['distance']} كم', Icons.route),
-              _infoBox('الوقت المتوقع', '${_driverData['etaMinutes']} دقائق', Icons.access_time),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoBox(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.crystalBlue, size: 24),
-        const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-      ],
     );
   }
 }

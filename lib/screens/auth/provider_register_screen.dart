@@ -1,10 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/core/widgets/glass_widgets.dart';
+import 'package:qatorah_app/screens/auth/otp_verification_screen.dart';
+import 'package:qatorah_app/screens/auth/provider_pending_screen.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
-import 'package:qatorah_app/screens/customer/customer_home.dart';
+import 'package:qatorah_app/models/region_model.dart';
 import 'package:qatorah_app/services/auth_service.dart';
 
 class ProviderRegisterScreen extends StatefulWidget {
@@ -18,254 +22,420 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
   final _authService = AuthService();
-  
-  String _selectedServiceType = 'صاحب محطة';
-  bool _isLoading = false;
-  bool _obscurePassword = true; // ✅ متغير لإظهار/إخفاء كلمة المرور
-
-  XFile? _idImage;
-  XFile? _licenseImage;
-  XFile? _extraImage;
-  XFile? _profileImage;
-
   final ImagePicker _picker = ImagePicker();
+
+  String _selectedRole = 'station_owner';
+  Governorate? _selectedGovernorate;
+  bool _isLoading = false;
+  bool _agreedToTerms = false;
+
+  final Map<String, String> _documentUrls = {};
+  final Map<String, bool> _isUploading = {};
+
+  final List<Map<String, String>> _roles = [
+    {'value': 'station_owner', 'label': 'صاحب محطة تعبئة'},
+    {'value': 'factory_owner', 'label': 'صاحب مصنع مياه'},
+    {'value': 'tanker_driver', 'label': 'سائق تنك'},
+    {'value': 'distribution_driver', 'label': 'سائق توصيل'},
+    {'value': 'gas_supplier', 'label': 'مزود غاز'},
+    {'value': 'plumber', 'label': 'سباك / صيانة'},
+    {'value': 'electrician', 'label': 'فني كهرباء'},
+    {'value': 'station_technician', 'label': 'فني محطات'},
+    {'value': 'parts_provider', 'label': 'مزود قطع غيار'},
+  ];
+
+  final Map<String, List<Map<String, String>>> _roleDocuments = {
+    'station_owner': [
+      {'id': 'station_exterior', 'label': 'صورة المحطة من الخارج'},
+      {'id': 'commercial_register', 'label': 'السجل التجاري'},
+      {'id': 'health_certificate', 'label': 'الشهادة الصحية'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+    ],
+    'factory_owner': [
+      {'id': 'factory_license', 'label': 'رخصة المصنع'},
+      {'id': 'commercial_register', 'label': 'السجل التجاري'},
+      {'id': 'health_certificate', 'label': 'الشهادة الصحية'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+    ],
+    'tanker_driver': [
+      {'id': 'tanker_license', 'label': 'رخصة التنك'},
+      {'id': 'tanker_photo', 'label': 'صورة التنك'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+    ],
+    'distribution_driver': [
+      {'id': 'car_photo', 'label': 'صورة السيارة'},
+      {'id': 'driving_license', 'label': 'رخصة القيادة'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+      {'id': 'personal_photo', 'label': 'صورة شخصية'},
+    ],
+    'gas_supplier': [
+      {'id': 'gas_license', 'label': 'رخصة الغاز'},
+      {'id': 'warehouse_photo', 'label': 'صورة المستودع'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+      {'id': 'safety_certificate', 'label': 'شهادة السلامة'},
+    ],
+    'plumber': [
+      {'id': 'profession_certificate', 'label': 'شهادة المهنة'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+      {'id': 'personal_photo', 'label': 'صورة شخصية'},
+      {'id': 'practice_license', 'label': 'رخصة المزاولة'},
+    ],
+    'electrician': [
+      {'id': 'profession_certificate', 'label': 'شهادة المهنة'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+      {'id': 'personal_photo', 'label': 'صورة شخصية'},
+      {'id': 'practice_license', 'label': 'رخصة المزاولة'},
+    ],
+    'station_technician': [
+      {'id': 'profession_certificate', 'label': 'شهادة المهنة'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+      {'id': 'personal_photo', 'label': 'صورة شخصية'},
+      {'id': 'practice_license', 'label': 'رخصة المزاولة'},
+    ],
+    'parts_provider': [
+      {'id': 'commercial_register', 'label': 'السجل التجاري'},
+      {'id': 'store_photo', 'label': 'صورة المحل'},
+      {'id': 'id_card', 'label': 'صورة الهوية الشخصية'},
+    ],
+  };
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
-    _passwordCtrl.dispose();
     super.dispose();
   }
 
-  String _getExtraDocLabel() {
-    switch (_selectedServiceType) {
-      case 'صاحب محطة': return 'آخر شهادة صحية للمحطة';
-      case 'صاحب مصنع مياه': return 'رخصة المصنع وشهادة جودة المياه';
-      case 'مزود مواد خام لمصانع المياه': return 'شهادات جودة المواد وسجل تجاري';
-      case 'فني محطات': return 'شهادات خبرة فنية أو دورات تدريبية';
-      case 'كهربائي': return 'رخصة مزاولة مهنة كهرباء';
-      case 'سباك': return 'رخصة مزاولة مهنة سباكة';
-      case 'مبرمج + صيانة ماكنات': return 'شهادات برمجة أو صيانة معتمدة';
-      case 'خدمات تنظيف الخزانات والآبار وتعقيم المحطات': return 'شهادات تعقيم وصور لمعدات العمل';
-      default: return 'وثيقة إضافية تثبت المهنة';
-    }
-  }
+  Future<void> _pickAndUploadDocument(String docId, String docLabel) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
 
-  Future<void> _openCamera(Function(XFile?) onImagePicked) async {
+    setState(() => _isUploading[docId] = true);
+
     try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 80,
-      );
-      if (pickedFile != null) {
-        onImagePicked(pickedFile);
-      }
+      final cleanPhone = _phoneCtrl.text.trim().replaceAll(RegExp(r'\D'), '');
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('providers_pending/${cleanPhone}_$docId.jpg');
+      final uploadTask = await ref.putFile(File(image.path));
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+
+      setState(() {
+        _documentUrls[docId] = downloadUrl;
+        _isUploading[docId] = false;
+      });
     } catch (e) {
-      if (!mounted) return;
-      _showErrorMessage('حدث خطأ أثناء فتح الكاميرا: $e');
+      setState(() => _isUploading[docId] = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('فشل رفع الصورة: $e'),
+              backgroundColor: AppColors.plumberRed),
+        );
+      }
     }
   }
 
-  Future<void> _submitRegistration() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    if (_idImage == null || _licenseImage == null || _extraImage == null || _profileImage == null) {
-      _showErrorMessage('يرجى التقاط جميع الصور المطلوبة للمتابعة');
+  Future<void> _registerProvider() async {
+    if (!_formKey.currentState!.validate() || !_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى ملء جميع الحقول والموافقة على الشروط'),
+          backgroundColor: AppColors.plumberRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
+    }
+
+    if (_selectedGovernorate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى اختيار المحافظة'),
+          backgroundColor: AppColors.plumberRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final requiredDocs = _roleDocuments[_selectedRole] ?? [];
+    for (var doc in requiredDocs) {
+      if (_documentUrls[doc['id']] == null ||
+          _documentUrls[doc['id']]!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('يرجى رفع جميع الوثائق المطلوبة: ${doc['label']}'),
+            backgroundColor: AppColors.plumberRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
 
     try {
       final rawPhone = _phoneCtrl.text.trim();
-      final formattedPhone = rawPhone.startsWith('+') 
-          ? rawPhone 
-          : (rawPhone.startsWith('0') ? '+962${rawPhone.substring(1)}' : '+962$rawPhone');
-      
-      final password = _passwordCtrl.text.trim();
-      final name = _nameCtrl.text.trim();
-      final serviceType = _selectedServiceType;
+      final phone = rawPhone.startsWith('+')
+          ? rawPhone
+          : rawPhone.startsWith('0')
+              ? '+962${rawPhone.substring(1)}'
+              : '+962$rawPhone';
 
-      final auth = FirebaseAuth.instance;
-      final userCredential = await auth.createUserWithEmailAndPassword(
-        email: 'provider_${formattedPhone.replaceAll('+', '')}@qatorah.app',
-        password: password,
+      debugPrint('📲 جاري إرسال OTP للرقم: $phone');
+
+      await _authService.sendPhoneVerificationCode(
+        phoneNumber: phone,
+        onCodeSent: (verificationId, resendToken) {
+          if (!mounted) return;
+          setState(() => _isLoading = false);
+
+          debugPrint('✅ تم إرسال OTP، الانتقال لشاشة التحقق');
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OtpVerificationScreen(
+                phone: phone,
+                name: _nameCtrl.text.trim(),
+                role: _selectedRole,
+                verificationId: verificationId,
+                documentUrls: _documentUrls,
+              ),
+            ),
+          );
+        },
+        onAutoVerified: (credential) async {
+          debugPrint('🔄 تم التحقق التلقائي');
+          await _saveProviderData(credential);
+        },
+        onFailure: (message) {
+          if (!mounted) return;
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('فشل إرسال OTP: $message'),
+              backgroundColor: AppColors.plumberRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
       );
-
-      final uid = userCredential.user!.uid;
-
-      await _authService.registerProvider(
-        uid: uid,
-        name: name,
-        phone: formattedPhone,
-        serviceType: serviceType,
-        password: password,
-      );
-
-      await AuthManager.loginAsProvider(
-        firstName: name,
-        phone: formattedPhone,
-        serviceType: serviceType,
-        firebaseUid: uid,
-      );
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      
-      _showPendingApprovalDialog();
-
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      String msg = 'فشل التسجيل';
-      if (e.code == 'email-already-in-use') {
-        msg = 'رقم الهاتف هذا مسجل مسبقاً. يرجى تسجيل الدخول.';
-      } else if (e.code == 'weak-password') {
-        msg = 'كلمة المرور ضعيفة جداً (يجب أن تكون 6 أحرف على الأقل).';
-      } else if (e.code == 'invalid-email') {
-        msg = 'تنسيق رقم الهاتف غير صحيح.';
-      } else {
-        msg = e.message ?? 'حدث خطأ غير متوقع';
-      }
-      _showErrorMessage(msg);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _showErrorMessage('حدث خطأ: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ: $e'),
+          backgroundColor: AppColors.plumberRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
-  void _showPendingApprovalDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1F2E),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.goldLight.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: AppColors.goldLight.withValues(alpha: 0.2), shape: BoxShape.circle),
-                child: const Icon(Icons.pending_actions, color: AppColors.goldLight, size: 48),
-              ),
-              const SizedBox(height: 20),
-              const Text('تم استلام طلبك بنجاح!', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Text(
-                'بصفتك: $_selectedServiceType\nحسابك الآن "بانتظار موافقة الإدارة".\nيمكنك تصفح التطبيق كعميل ريثما يتم تفعيل حسابك.', 
-                textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-              const SizedBox(height: 24),
-              GoldButton(
-                text: 'حسناً، انتقل للتطبيق',
-                icon: Icons.check,
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
-                    (route) => false,
-                  );
-                },
-              )
-            ],
+  Future<void> _saveProviderData(dynamic credential) async {
+    try {
+      final rawPhone = _phoneCtrl.text.trim();
+      final phone = rawPhone.startsWith('+')
+          ? rawPhone
+          : (rawPhone.startsWith('0')
+              ? '+962${rawPhone.substring(1)}'
+              : '+962$rawPhone');
+      final requiredDocs = _roleDocuments[_selectedRole] ?? [];
+
+      final result = await _authService.signInWithPhoneCredential(
+        credential: credential,
+        profile: {
+          'name': _nameCtrl.text.trim(),
+          'phone': phone,
+          'governorate': _selectedGovernorate!.displayName,
+          'area': _selectedGovernorate!.displayName,
+          'role': _selectedRole,
+          'status': 'pending',
+          'approvedByAdmin': false,
+          'subscriptionPaid': false,
+          'documents': _documentUrls,
+          'documentsStatus': {
+            for (var doc in requiredDocs) doc['id']!: 'pending',
+          },
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+      );
+
+      final uid = result.user?.uid;
+      debugPrint('✅ تم تسجيل مزود الخدمة بنجاح، UID: $uid');
+
+      if (!mounted) return;
+
+      // ✅ الحل الجذري والمضمون: مطابقة يدوية آمنة 100% تمنع الانهيار نهائياً
+      UserRole userRoleEnum = UserRole.customer;
+      switch (_selectedRole) {
+        case 'station_owner':
+          userRoleEnum = UserRole.stationOwner;
+          break;
+        case 'factory_owner':
+          userRoleEnum = UserRole.factoryOwner;
+          break;
+        case 'tanker_driver':
+          userRoleEnum = UserRole.tankerDriver;
+          break;
+        case 'distribution_driver':
+          userRoleEnum = UserRole.distributionDriver;
+          break;
+        case 'gas_supplier':
+          userRoleEnum = UserRole.gasSupplier;
+          break;
+        case 'plumber':
+          userRoleEnum = UserRole.plumber;
+          break;
+        case 'electrician':
+          userRoleEnum = UserRole.electrician;
+          break;
+        case 'station_technician':
+          userRoleEnum = UserRole.stationTechnician;
+          break;
+        case 'parts_provider':
+          userRoleEnum = UserRole.partsProvider;
+          break;
+        default:
+          userRoleEnum = UserRole.customer;
+          break;
+      }
+
+      await AuthManager.loginAsProvider(
+        firstName: _nameCtrl.text.trim(),
+        phone: phone,
+        serviceType: _selectedRole,
+        role: userRoleEnum,
+        firebaseUid: uid,
+      );
+      AuthManager.setGuestMode(false);
+      await AuthManager.saveSession();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('✅ تم إرسال طلبك بنجاح! سيتم مراجعة وثائقك وتفعيل حسابك.'),
+          backgroundColor: AppColors.refillGreen,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProviderPendingScreen(
+            providerName: _nameCtrl.text.trim(),
+            providerRole: _selectedRole,
           ),
         ),
-      ),
-    );
-  }
-
-  void _showErrorMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.plumberRed,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  Widget _buildImagePickerBox(String label, XFile? image, Function(XFile?) onImageSelected) {
-    return GestureDetector(
-      onTap: () => _openCamera(onImageSelected),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.navyDark.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: image != null ? AppColors.refillGreen : AppColors.goldDark.withValues(alpha: 0.5), 
-            style: BorderStyle.solid,
-            width: image != null ? 2 : 1,
-          ),
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('❌ خطأ في حفظ بيانات مزود الخدمة: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ في الحفظ: $e'),
+          backgroundColor: AppColors.plumberRed,
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: image != null ? AppColors.refillGreen.withValues(alpha: 0.2) : AppColors.goldLight.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                image != null ? Icons.check_circle : Icons.camera_alt, 
-                color: image != null ? AppColors.refillGreen : AppColors.goldLight, 
-                size: 28
-              ),
+      );
+    }
+  }
+
+  Widget _buildDocumentCard(String docId, String label) {
+    final isUploaded = _documentUrls[docId] != null;
+    final isUploading = _isUploading[docId] ?? false;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F2E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isUploaded
+              ? AppColors.refillGreen
+              : AppColors.goldLight.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isUploaded
+                  ? AppColors.refillGreen.withValues(alpha: 0.2)
+                  : AppColors.goldLight.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                    image != null ? 'تم التقاط: ${image.name}' : 'اضغط هنا لفتح الكاميرا', 
-                    style: TextStyle(
-                      color: image != null ? AppColors.refillGreen : Colors.white54, 
-                      fontSize: 12,
-                      fontWeight: image != null ? FontWeight.bold : FontWeight.normal
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            child: Icon(
+              isUploaded ? Icons.check_circle : Icons.upload_file,
+              color: isUploaded ? AppColors.refillGreen : AppColors.goldLight,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  isUploaded ? 'تم الرفع بنجاح ✅' : 'اضغط لرفع الصورة',
+                  style: TextStyle(
+                    color: isUploaded ? AppColors.refillGreen : Colors.white54,
+                    fontSize: 12,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (image != null)
-              IconButton(
-                icon: const Icon(Icons.close, color: AppColors.plumberRed, size: 20),
-                onPressed: () => onImageSelected(null),
-              )
-          ],
-        ),
+          ),
+          if (isUploading)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.goldLight),
+            )
+          else
+            IconButton(
+              icon: Icon(isUploaded ? Icons.edit : Icons.add_a_photo,
+                  color: AppColors.goldLight),
+              onPressed: () => _pickAndUploadDocument(docId, label),
+            ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final requiredDocs = _roleDocuments[_selectedRole] ?? [];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تسجيل مزود خدمة', style: TextStyle(color: AppColors.goldLight, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'سجل معنا شريك نجاح',
+          style: TextStyle(
+              color: AppColors.goldLight, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.goldLight),
       ),
-      extendBodyBehindAppBar: false,
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.mainBackground),
         child: SafeArea(
@@ -276,125 +446,173 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('البيانات الأساسية', style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
+                  const Icon(Icons.business_center,
+                      size: 70, color: AppColors.goldLight),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'سجل معنا شريك نجاح',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'سيتم مراجعة طلبك ووثائقك وتفعيل حسابك من قبل الإدارة',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
                   TextFormField(
                     controller: _nameCtrl,
                     style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('الاسم الكامل', Icons.person),
-                    validator: (v) => v!.isEmpty ? 'الاسم مطلوب' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'الاسم الكامل / اسم المنشأة',
+                      prefixIcon:
+                          Icon(Icons.person, color: AppColors.goldLight),
+                      filled: true,
+                      fillColor: Color(0xFF1A1F2E),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide.none),
+                    ),
+                    validator: (v) => v!.isEmpty ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _phoneCtrl,
-                    style: const TextStyle(color: Colors.white),
                     keyboardType: TextInputType.phone,
-                    decoration: _inputDecoration('رقم الهاتف', Icons.phone),
-                    validator: (v) => v!.isEmpty ? 'رقم الهاتف مطلوب' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  // ✅ حقل كلمة المرور مع زر الإظهار/الإخفاء
-                  TextFormField(
-                    controller: _passwordCtrl,
                     style: const TextStyle(color: Colors.white),
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'كلمة المرور',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(Icons.lock, color: AppColors.goldLight),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          color: AppColors.goldLight,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
+                    decoration: const InputDecoration(
+                      labelText: 'رقم الهاتف',
+                      prefixIcon: Icon(Icons.phone, color: AppColors.goldLight),
                       filled: true,
-                      fillColor: AppColors.navyDark.withValues(alpha: 0.5),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.goldDark.withValues(alpha: 0.5)),
-                      ),
+                      fillColor: Color(0xFF1A1F2E),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide.none),
                     ),
-                    validator: (v) => v!.length < 6 ? '6 أحرف على الأقل' : null,
+                    validator: (v) => v!.isEmpty ? 'مطلوب' : null,
                   ),
-                  
-                  const SizedBox(height: 24),
-                  const Text('تفاصيل الخدمة والوثائق', style: TextStyle(color: AppColors.goldLight, fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  
+                  DropdownButtonFormField<Governorate>(
+                    initialValue: _selectedGovernorate,
+                    dropdownColor: const Color(0xFF1A1F2E),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'محافظة مكان العمل',
+                      prefixIcon:
+                          Icon(Icons.location_on, color: AppColors.goldLight),
+                      filled: true,
+                      fillColor: Color(0xFF1A1F2E),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide.none),
+                    ),
+                    items: Governorate.values.map((g) {
+                      return DropdownMenuItem(
+                        value: g,
+                        child: Text(g.displayName),
+                      );
+                    }).toList(),
+                    validator: (v) => v == null ? 'يرجى اختيار المحافظة' : null,
+                    onChanged: (val) =>
+                        setState(() => _selectedGovernorate = val),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedRole,
+                    dropdownColor: const Color(0xFF1A1F2E),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'نوع الخدمة / المهنة',
+                      prefixIcon:
+                          Icon(Icons.category, color: AppColors.goldLight),
+                      filled: true,
+                      fillColor: Color(0xFF1A1F2E),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide.none),
+                    ),
+                    items: _roles.map((role) {
+                      return DropdownMenuItem(
+                        value: role['value'],
+                        child: Text(role['label']!),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setState(() => _selectedRole = val!),
+                  ),
+                  const SizedBox(height: 16),
+                  if (requiredDocs.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'الوثائق المطلوبة للتسجيل',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    ...requiredDocs.map(
+                        (doc) => _buildDocumentCard(doc['id']!, doc['label']!)),
+                  ],
+                  const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.navyDark.withValues(alpha: 0.5), 
-                      borderRadius: BorderRadius.circular(12), 
-                      border: Border.all(color: AppColors.goldDark.withValues(alpha: 0.5))
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedServiceType,
-                      dropdownColor: AppColors.navyDark,
-                      style: const TextStyle(color: Colors.white),
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none, 
-                        prefixIcon: Icon(Icons.work, color: AppColors.goldLight)
+                      color: AppColors.navyDark.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _agreedToTerms
+                            ? AppColors.refillGreen.withValues(alpha: 0.6)
+                            : AppColors.goldDark.withValues(alpha: 0.5),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'صاحب محطة', child: Row(children: [Icon(Icons.store, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('صاحب محطة')])),
-                        DropdownMenuItem(value: 'صاحب مصنع مياه', child: Row(children: [Icon(Icons.factory, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('صاحب مصنع مياه')])),
-                        DropdownMenuItem(value: 'مزود مواد خام لمصانع المياه', child: Row(children: [Icon(Icons.inventory_2, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('مزود مواد خام')])),
-                        DropdownMenuItem(value: 'فني محطات', child: Row(children: [Icon(Icons.engineering, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('فني محطات')])),
-                        DropdownMenuItem(value: 'كهربائي', child: Row(children: [Icon(Icons.electrical_services, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('كهربائي')])),
-                        DropdownMenuItem(value: 'سباك', child: Row(children: [Icon(Icons.plumbing, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('سباك')])),
-                        DropdownMenuItem(value: 'مبرمج + صيانة ماكنات', child: Row(children: [Icon(Icons.memory, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('مبرمج + صيانة ماكنات')])),
-                        DropdownMenuItem(value: 'صاحب محطة متنقلة', child: Row(children: [Icon(Icons.local_shipping, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('صاحب محطة متنقلة')])),
-                        DropdownMenuItem(value: 'سيارة غاز', child: Row(children: [Icon(Icons.local_fire_department, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('سيارة غاز')])),
-                        DropdownMenuItem(value: 'تنك مياه', child: Row(children: [Icon(Icons.water_drop, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('تنك مياه')])),
-                        DropdownMenuItem(value: 'خدمات تنظيف الخزانات والآبار وتعقيم المحطات', child: Row(children: [Icon(Icons.cleaning_services, color: AppColors.goldLight, size: 20), SizedBox(width: 10), Text('خدمات تنظيف وتعقيم')])),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: _agreedToTerms,
+                            onChanged: (v) =>
+                                setState(() => _agreedToTerms = v ?? false),
+                            activeColor: AppColors.refillGreen,
+                            checkColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'أوافق على اتفاقية مزودي الخدمة وشروط العمل وأن جميع الوثائق المرفقة صحيحة',
+                            style: TextStyle(
+                                color: Colors.white, fontSize: 13, height: 1.5),
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => _selectedServiceType = v!),
                     ),
                   ),
-
-                  const SizedBox(height: 20),
-                  _buildImagePickerBox('1. صورة الهوية الشخصية', _idImage, (img) => setState(() => _idImage = img)),
-                  const SizedBox(height: 12),
-                  _buildImagePickerBox('2. رخصة مزاولة المهنة / المحطة', _licenseImage, (img) => setState(() => _licenseImage = img)),
-                  const SizedBox(height: 12),
-                  _buildImagePickerBox('3. ${_getExtraDocLabel()}', _extraImage, (img) => setState(() => _extraImage = img)),
-                  const SizedBox(height: 12),
-                  _buildImagePickerBox('4. صورة شخصية واضحة', _profileImage, (img) => setState(() => _profileImage = img)),
-
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
                   GoldButton(
-                    text: _isLoading ? 'جاري رفع البيانات...' : 'إرسال طلب الانضمام',
+                    text:
+                        _isLoading ? 'جاري المعالجة...' : 'إرسال طلب الانضمام',
                     icon: Icons.send,
-                    onPressed: _isLoading ? () {} : _submitRegistration,
+                    onPressed: _isLoading ? () {} : _registerProvider,
                   ),
                   const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('العودة للتسجيل كعميل',
+                        style: TextStyle(color: AppColors.crystalBlue)),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      prefixIcon: Icon(icon, color: AppColors.goldLight),
-      filled: true,
-      fillColor: AppColors.navyDark.withValues(alpha: 0.5),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.goldDark.withValues(alpha: 0.5))),
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qatorah_app/core/theme/app_theme.dart';
+import 'package:qatorah_app/core/theme/app_colors.dart';
 import 'package:qatorah_app/managers/theme_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,7 +13,7 @@ class CustomizeScreen extends StatefulWidget {
 class _CustomizeScreenState extends State<CustomizeScreen> {
   bool _glassEnabled = ThemeManager.glassEnabled;
   double _bgOpacity = ThemeManager.bgOpacity;
-  String _fontSize = 'متوسط'; // صغير، متوسط، كبير
+  String _fontSize = 'متوسط';
   bool _notificationsEnabled = true;
   bool _statsEnabled = true;
   String _selectedLanguage = 'العربية';
@@ -59,12 +59,21 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ تحديد الألوان ديناميكياً بناءً على الوضع الليلي أو النهاري
+    final isDark = ThemeManager.isDarkMode;
+    final bgColor = isDark ? const Color(0xFF0A0E1A) : const Color(0xFFF5F7FA);
+    final cardColor = isDark ? const Color(0xFF1A1F2E) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1A2029);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E1A),
+      backgroundColor: bgColor, // ✅ الخلفية تتغير الآن
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('تخصيص التطبيق', style: TextStyle(color: AppColors.goldLight, fontWeight: FontWeight.bold)),
+        title: const Text('تخصيص التطبيق',
+            style: TextStyle(
+                color: AppColors.goldLight, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: AppColors.goldLight),
       ),
       body: SingleChildScrollView(
@@ -73,12 +82,16 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ═══ 1. الألوان ═══
-            _buildSectionTitle('🎨 لون التطبيق الرئيسي'),
+            Text('🎨 لون التطبيق الرئيسي',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1F2E),
+                color: cardColor, // ✅ البطاقة تتغير
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Wrap(
@@ -90,7 +103,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                     onTap: () {
                       setState(() => _selectedAccent = color);
                       ThemeManager.setAccentColor(color);
-                      _saveSetting('accent_color_index', _accentColors.indexOf(color));
+                      _saveSetting(
+                          'accent_color_index', _accentColors.indexOf(color));
                     },
                     child: Container(
                       width: 50,
@@ -99,14 +113,23 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? Colors.white : Colors.transparent,
+                          color: isSelected
+                              ? (isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1A2029))
+                              : Colors.transparent,
                           width: 3,
                         ),
                         boxShadow: [
-                          BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8),
+                          BoxShadow(
+                              color: color.withValues(alpha: 0.5),
+                              blurRadius: 8),
                         ],
                       ),
-                      child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 24) : null,
+                      child: isSelected
+                          ? const Icon(Icons.check,
+                              color: Colors.white, size: 24)
+                          : null,
                     ),
                   );
                 }).toList(),
@@ -114,32 +137,51 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ═══ 2. الوضع الليلي/النهاري ══
-            _buildSectionTitle('🌙 الوضع الليلي / النهاري'),
+            // ═══ 2. الوضع الليلي/النهاري ═══
+            Text('🌙 الوضع الليلي / النهاري',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _buildToggleCard(
-              icon: Icons.dark_mode,
-              title: 'الوضع الليلي',
-              subtitle: 'تقليل إجهاد العين في الإضاءة المنخفضة',
-              value: true, // ثابت حالياً، يمكن تطويره لاحقاً
-              color: AppColors.crystalBlue,
+              icon: isDark ? Icons.dark_mode : Icons.light_mode,
+              title: isDark ? 'الوضع الليلي' : 'الوضع النهاري',
+              subtitle: isDark
+                  ? 'تقليل إجهاد العين في الإضاءة المنخفضة'
+                  : 'واجهة فاتحة ومريحة للعين',
+              value: isDark,
+              color: AppColors.goldLight,
+              textColor: textColor,
+              subTextColor: subTextColor,
+              cardColor: cardColor,
+              onChanged: (val) {
+                setState(() {});
+                ThemeManager.toggleTheme(val);
+              },
             ),
             const SizedBox(height: 24),
 
             // ═══ 3. تأثير الزجاج ═══
-            _buildSectionTitle('🔲 تأثير الزجاج (Glass)'),
+            Text('🔲 تأثير الزجاج (Glass)',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1F2E),
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('تفعيل تأثير الزجاج', style: TextStyle(color: Colors.white)),
-                    subtitle: Text('شفافية: ${(_bgOpacity * 100).toInt()}%', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                    title: Text('تفعيل تأثير الزجاج',
+                        style: TextStyle(color: textColor)),
+                    subtitle: Text('شفافية: ${(_bgOpacity * 100).toInt()}%',
+                        style: TextStyle(color: subTextColor)),
                     value: _glassEnabled,
                     activeThumbColor: AppColors.goldLight,
                     onChanged: (val) {
@@ -155,7 +197,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                       max: 1.0,
                       divisions: 7,
                       activeColor: AppColors.goldLight,
-                      inactiveColor: Colors.white24,
+                      inactiveColor: subTextColor,
                       label: '${(_bgOpacity * 100).toInt()}%',
                       onChanged: (val) {
                         setState(() => _bgOpacity = val);
@@ -169,12 +211,16 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             const SizedBox(height: 24),
 
             // ═══ 4. حجم الخط ═══
-            _buildSectionTitle('🔤 حجم الخط'),
+            Text('🔤 حجم الخط',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1F2E),
+                color: cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -189,15 +235,21 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.goldLight : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.goldLight
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           size,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: isSelected ? const Color(0xFF0A0E1A) : Colors.white70,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? const Color(0xFF0A0E1A)
+                                : subTextColor,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -209,29 +261,37 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             const SizedBox(height: 24),
 
             // ═══ 5. اللغة ═══
-            _buildSectionTitle('🌍 اللغة'),
+            Text('🌍 اللغة',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1F2E),
+                color: cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildLanguageButton('العربية', '🇯🇴'),
-                  ),
+                      child: _buildLanguageButton(
+                          'العربية', '🇯🇴', textColor, subTextColor)),
                   Expanded(
-                    child: _buildLanguageButton('English', '🇬🇧'),
-                  ),
+                      child: _buildLanguageButton(
+                          'English', '🇬🇧', textColor, subTextColor)),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
             // ═══ 6. الإشعارات ═══
-            _buildSectionTitle(' الإشعارات'),
+            Text('🔔 الإشعارات',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _buildToggleCard(
               icon: Icons.notifications,
@@ -239,6 +299,9 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               subtitle: 'استلام تنبيهات الطلبات والعروض',
               value: _notificationsEnabled,
               color: AppColors.refillGreen,
+              textColor: textColor,
+              subTextColor: subTextColor,
+              cardColor: cardColor,
               onChanged: (val) {
                 setState(() => _notificationsEnabled = val);
                 _saveSetting('notifications_enabled', val);
@@ -247,7 +310,11 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             const SizedBox(height: 24),
 
             // ═══ 7. الإحصائيات ═══
-            _buildSectionTitle('📊 الإحصائيات'),
+            Text('📊 الإحصائيات',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _buildToggleCard(
               icon: Icons.bar_chart,
@@ -255,6 +322,9 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               subtitle: 'عرض الرسوم البيانية في لوحة التحكم',
               value: _statsEnabled,
               color: AppColors.factoryPurple,
+              textColor: textColor,
+              subTextColor: subTextColor,
+              cardColor: cardColor,
               onChanged: (val) {
                 setState(() => _statsEnabled = val);
                 _saveSetting('stats_enabled', val);
@@ -273,7 +343,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                   foregroundColor: AppColors.plumberRed,
                   side: const BorderSide(color: AppColors.plumberRed),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
@@ -284,25 +355,21 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-    );
-  }
-
   Widget _buildToggleCard({
     required IconData icon,
     required String title,
     required String subtitle,
     required bool value,
     required Color color,
+    required Color textColor,
+    required Color subTextColor,
+    required Color cardColor,
     ValueChanged<bool>? onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1F2E),
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
@@ -316,8 +383,10 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
           ),
           child: Icon(icon, color: color, size: 24),
         ),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11)),
+        title: Text(title,
+            style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        subtitle:
+            Text(subtitle, style: TextStyle(color: subTextColor, fontSize: 11)),
         value: value,
         activeThumbColor: color,
         onChanged: onChanged ?? (val) {},
@@ -325,7 +394,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     );
   }
 
-  Widget _buildLanguageButton(String lang, String flag) {
+  Widget _buildLanguageButton(
+      String lang, String flag, Color textColor, Color subTextColor) {
     final isSelected = _selectedLanguage == lang;
     return GestureDetector(
       onTap: () {
@@ -346,7 +416,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
             Text(
               lang,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF0A0E1A) : Colors.white70,
+                color: isSelected ? const Color(0xFF0A0E1A) : subTextColor,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -359,6 +429,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
   Future<void> _resetToDefaults() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    if (!mounted) return;
     setState(() {
       _glassEnabled = true;
       _bgOpacity = 0.85;

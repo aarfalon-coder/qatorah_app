@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 import 'package:qatorah_app/core/widgets/glass_widgets.dart';
+import 'package:qatorah_app/core/widgets/dashboard_selector.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
+import 'package:qatorah_app/screens/auth/provider_pending_screen.dart';
 import 'package:qatorah_app/screens/customer/customer_home.dart';
 import 'package:qatorah_app/services/auth_service.dart';
 
@@ -13,7 +15,9 @@ class OtpVerificationScreen extends StatefulWidget {
   final String name;
   final dynamic role;
   final String verificationId;
+  final bool isLogin;
   final bool isProviderLogin;
+  final Map<String, String>? documentUrls;
 
   const OtpVerificationScreen({
     super.key,
@@ -21,7 +25,9 @@ class OtpVerificationScreen extends StatefulWidget {
     required this.name,
     required this.role,
     required this.verificationId,
+    this.isLogin = false,
     this.isProviderLogin = false,
+    this.documentUrls,
   });
 
   @override
@@ -34,7 +40,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   final List<TextEditingController> _otpControllers =
       List.generate(6, (index) => TextEditingController());
-
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
   @override
@@ -59,36 +64,51 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   String _getOtpCode() =>
       _otpControllers.map((controller) => controller.text).join();
 
-  void _fillOtp(String code) {
-    final digits = code.replaceAll(RegExp(r'\D'), '');
-    final limited = digits.length > 6 ? digits.substring(0, 6) : digits;
-
-    for (int i = 0; i < 6; i++) {
-      _otpControllers[i].text = i < limited.length ? limited[i] : '';
-    }
-
-    if (limited.isNotEmpty) {
-      final nextFocus = limited.length >= 6 ? 5 : limited.length;
-      _focusNodes[nextFocus].requestFocus();
-    }
-
-    if (limited.length == 6) {
-      _verifyOtp();
-    }
-  }
-
+  // ✅ دالة النسخ من الحافظة - محسنة
   Future<void> _pasteCode() async {
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    final pastedText = clipboardData?.text?.trim() ?? '';
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      final pastedText = clipboardData?.text?.trim() ?? '';
 
-    final digits = pastedText.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 6) {
-      _fillOtp(digits);
-    } else {
+      // استخراج الأرقام فقط من النص
+      final digits = pastedText.replaceAll(RegExp(r'\D'), '');
+
+      if (digits.length >= 6) {
+        final code = digits.substring(0, 6);
+        for (int i = 0; i < 6; i++) {
+          _otpControllers[i].text = code[i];
+        }
+        _focusNodes[5].requestFocus();
+
+        // التحقق التلقائي بعد اللصق
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _verifyOtp();
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ تم لصق الكود بنجاح'),
+            backgroundColor: AppColors.refillGreen,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('الكود الملتصق غير صالح (يجب أن يحتوي على 6 أرقام)'),
+            backgroundColor: AppColors.plumberRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الكود الملتصق غير صالح (يجب أن يكون 6 أرقام)'),
+        SnackBar(
+          content: Text('فشل اللصق: $e'),
           backgroundColor: AppColors.plumberRed,
           behavior: SnackBarBehavior.floating,
         ),
@@ -110,39 +130,198 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
+    if (widget.verificationId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('خطأ في جلسة التحقق، يرجى طلب كود جديد'),
+          backgroundColor: AppColors.plumberRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
+    var signedIn = false;
+    var sessionEstablished = false;
     try {
       final credential = PhoneAuthProvider.credential(
         verificationId: widget.verificationId,
         smsCode: otpCode,
       );
 
+      if (widget.isLogin) {
+        final result = await _authService.signInWithPhoneCredential(
+          credential: credential,
+        );
+        signedIn = true;
+        final user = result.user;
+        if (user == null) {
+          throw const AuthServiceException('تعذّر تحديد الحساب بعد التحقق.');
+        }
+
+        final userData = await _authService.getUserData(user.uid);
+        if (userData == null) {
+          throw const AuthServiceException(
+            'لا يوجد حساب مسجل بهذا الرقم. أنشئ حساباً أولاً.',
+          );
+        }
+
+        final roleString = userData['role']?.toString() ?? '';
+        final userRole = AuthManager.tryParseRole(roleString);
+        if (userRole == null) {
+          throw const AuthServiceException(
+            'نوع الحساب غير معروف. تواصل مع الدعم.',
+          );
+        }
+        if ((userRole != UserRole.customer) != widget.isProviderLogin) {
+          throw const AuthServiceException(
+            'نوع الحساب لا يطابق خيار الدخول المحدد.',
+          );
+        }
+
+        final status = userData['status']?.toString();
+        if (status == 'suspended' ||
+            status == 'rejected' ||
+            status == 'disabled') {
+          throw const AuthServiceException('هذا الحساب موقوف أو مرفوض.');
+        }
+
+        final firstName =
+            (userData['name'] ?? userData['firstName'] ?? widget.name)
+                .toString();
+        if (userRole == UserRole.customer) {
+          await AuthManager.login(
+            firstName: firstName,
+            phone: user.phoneNumber ?? widget.phone,
+            role: userRole,
+            firebaseUid: user.uid,
+            governorateCode: userData['governorate']?.toString(),
+          );
+        } else {
+          await AuthManager.loginAsProvider(
+            firstName: firstName,
+            phone: user.phoneNumber ?? widget.phone,
+            serviceType: roleString,
+            role: userRole,
+            firebaseUid: user.uid,
+          );
+        }
+        sessionEstablished = true;
+
+        if (userRole != UserRole.customer && status != 'pending') {
+          final expiryData = userData['subscriptionExpiryDate'];
+          DateTime? subscriptionExpiry;
+          if (expiryData is Timestamp) {
+            subscriptionExpiry = expiryData.toDate();
+          } else if (expiryData is String) {
+            subscriptionExpiry = DateTime.tryParse(expiryData);
+          }
+          final balanceData = userData['walletBalance'];
+          final walletBalance =
+              balanceData is num ? balanceData.toDouble() : 0.0;
+          AuthManager.updateSubscriptionStatus(
+              subscriptionExpiry, walletBalance);
+        }
+
+        if (!mounted) return;
+        Widget nextScreen = status == 'pending' && userRole != UserRole.customer
+            ? ProviderPendingScreen(
+                providerName: firstName,
+                providerRole: roleString,
+              )
+            : const DashboardSelector();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => nextScreen),
+          (route) => false,
+        );
+        return;
+      }
+
+      final roleString = widget.role is String
+          ? widget.role
+          : widget.role.toString().split('.').last;
+
+      final profileData = <String, dynamic>{
+        'name': widget.name,
+        'phone': widget.phone,
+        'role': roleString,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (roleString != 'customer' &&
+          widget.documentUrls != null &&
+          widget.documentUrls!.isNotEmpty) {
+        profileData['status'] = 'pending';
+        profileData['approvedByAdmin'] = false;
+        profileData['subscriptionPaid'] = false;
+        profileData['documents'] = widget.documentUrls;
+        profileData['documentsStatus'] = {
+          for (var key in widget.documentUrls!.keys) key: 'pending',
+        };
+        profileData['createdAt'] = FieldValue.serverTimestamp();
+      } else {
+        profileData['status'] = 'active';
+        profileData['walletBalance'] = 0.0;
+        profileData['createdAt'] = FieldValue.serverTimestamp();
+      }
+
       final result = await _authService.signInWithPhoneCredential(
         credential: credential,
-        profile: {
-          'firstName': widget.name,
-          'role': widget.role.toString().split('.').last,
-          'phoneNumber': widget.phone,
-          'createdAt': FieldValue.serverTimestamp(),
-        },
+        profile: profileData,
       );
+      signedIn = true;
 
-      await AuthManager.login(
-        firstName: widget.name,
-        phone: widget.phone,
-        role: widget.role,
-        firebaseUid: result.user?.uid,
-      );
+      final userRoleEnum = AuthManager.tryParseRole(roleString);
+      if (userRoleEnum == null) {
+        throw const AuthServiceException('نوع الحساب غير معروف.');
+      }
+
+      if (userRoleEnum == UserRole.customer) {
+        await AuthManager.login(
+          firstName: widget.name,
+          phone: widget.phone,
+          role: userRoleEnum,
+          firebaseUid: result.user?.uid,
+        );
+      } else {
+        await AuthManager.loginAsProvider(
+          firstName: widget.name,
+          phone: widget.phone,
+          serviceType: roleString,
+          role: userRoleEnum,
+          firebaseUid: result.user?.uid,
+        );
+      }
+      sessionEstablished = true;
 
       if (!mounted) return;
 
+      Widget nextScreen;
+      if (userRoleEnum == UserRole.customer) {
+        nextScreen = const CustomerHomeScreen();
+      } else {
+        nextScreen = ProviderPendingScreen(
+            providerName: widget.name, providerRole: roleString);
+      }
+
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
+        MaterialPageRoute(builder: (_) => nextScreen),
         (route) => false,
       );
     } catch (e) {
+      debugPrint('❌ خطأ في التحقق: $e');
+      if (signedIn && !sessionEstablished) {
+        try {
+          await _authService.signOut();
+        } on Exception catch (signOutError) {
+          debugPrint(
+              'Failed to clear incomplete Firebase session: $signOutError');
+        }
+      }
       if (!mounted) return;
       setState(() => _isLoading = false);
 
@@ -172,19 +351,32 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         focusNode: _focusNodes[index],
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
-        textInputAction: TextInputAction.next,
+        textInputAction:
+            index == 5 ? TextInputAction.done : TextInputAction.next,
         showCursor: true,
-        // ✅ إضافة AutofillHints لاقتراح الكود تلقائياً
         autofillHints: index == 0 ? [AutofillHints.oneTimeCode] : null,
+        enableInteractiveSelection: true,
+        smartDashesType: SmartDashesType.disabled,
+        smartQuotesType: SmartQuotesType.disabled,
+        enableSuggestions: false,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 22,
           fontWeight: FontWeight.bold,
+          fontFamily: 'monospace',
         ),
         inputFormatters: [
           FilteringTextInputFormatter.digitsOnly,
           LengthLimitingTextInputFormatter(1),
         ],
+        buildCounter: (
+          BuildContext context, {
+          int? currentLength,
+          bool? isFocused,
+          int? maxLength,
+        }) {
+          return const SizedBox.shrink();
+        },
         decoration: InputDecoration(
           counterText: '',
           filled: true,
@@ -210,14 +402,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           if (value.isNotEmpty) {
             if (index < 5) {
               _focusNodes[index + 1].requestFocus();
+            } else {
+              FocusScope.of(context).unfocus();
             }
-            if (_getOtpCode().length == 6) {
-              Future.delayed(const Duration(milliseconds: 150), () {
-                if (mounted && _getOtpCode().length == 6) {
-                  _verifyOtp();
-                }
-              });
+          } else {
+            if (index > 0) {
+              _focusNodes[index - 1].requestFocus();
             }
+          }
+
+          if (_getOtpCode().length == 6) {
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted && _getOtpCode().length == 6) {
+                _verifyOtp();
+              }
+            });
           }
         },
         onTap: () {
@@ -236,8 +435,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       appBar: AppBar(
         title: const Text(
           'تأكيد الكود',
-          style:
-              TextStyle(color: AppColors.goldLight, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: AppColors.goldLight, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -252,7 +451,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -288,35 +487,43 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 50),
+                const SizedBox(height: 40),
 
-                // ✅ AutofillGroup لاقتراح الكود تلقائياً
-                AutofillGroup(
+                // ✅ حقول OTP - بدون Directionality لتجنب overflow
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: _buildOtpField(index),
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: _buildOtpField(index),
+                        ),
                       );
                     }),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
+                // ✅ زر لصق الكود - مفعل 100%
                 OutlinedButton.icon(
-                  onPressed: _pasteCode,
-                  icon: const Icon(Icons.paste, color: AppColors.crystalBlue),
+                  onPressed: _isLoading ? null : _pasteCode,
+                  icon: const Icon(Icons.paste,
+                      color: AppColors.crystalBlue, size: 20),
                   label: const Text(
                     'لصق الكود من الرسائل',
                     style: TextStyle(
                         color: AppColors.crystalBlue,
-                        fontWeight: FontWeight.bold),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.crystalBlue),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: const BorderSide(
+                        color: AppColors.crystalBlue, width: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 20),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -349,7 +556,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
               ],
             ),
           ),

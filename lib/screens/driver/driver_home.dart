@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:qatorah_app/core/theme/app_theme.dart';
 
 class DriverHomeScreen extends StatelessWidget {
@@ -24,18 +24,18 @@ class DriverHomeScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.refillGreen.withValues(alpha: 0.5)),
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('أرباح اليوم', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                const SizedBox(height: 8),
-                const Text('45.50 د.أ', style: TextStyle(color: AppColors.refillGreen, fontSize: 32, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                Text('أرباح اليوم', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                SizedBox(height: 8),
+                Text('45.50 د.أ', style: TextStyle(color: AppColors.refillGreen, fontSize: 32, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.trending_up, color: AppColors.refillGreen, size: 16),
-                    const SizedBox(width: 4),
-                    const Text('+12% عن أمس', style: TextStyle(color: AppColors.refillGreen, fontSize: 12)),
+                    Icon(Icons.trending_up, color: AppColors.refillGreen, size: 16),
+                    SizedBox(width: 4),
+                    Text('+12% عن أمس', style: TextStyle(color: AppColors.refillGreen, fontSize: 12)),
                   ],
                 ),
               ],

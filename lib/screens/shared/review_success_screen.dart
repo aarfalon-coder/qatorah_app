@@ -131,7 +131,7 @@ class _ReviewSuccessScreenState extends State<ReviewSuccessScreen>
                         const SizedBox(height: 12),
                         Text(
                           _getRatingText(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.goldLight,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,

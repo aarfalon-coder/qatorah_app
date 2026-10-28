@@ -5,9 +5,7 @@ import 'package:qatorah_app/managers/advertisement_manager.dart';
 import 'package:qatorah_app/managers/auth_manager.dart';
 import 'package:qatorah_app/models/advertisement_model.dart';
 import 'package:qatorah_app/screens/provider/create_ad_screen.dart';
-
-// ✅ تم إضافة هذا السطر لإصلاح خطأ kMockProviderId غير معرف
-const String kMockProviderId = "mock_provider_123";
+// import 'package:qatorah_app/services/order_service.dart'; // ✅ فك التعليق عند ربط الطلبات
 
 class ProviderHomeScreen extends StatefulWidget {
   const ProviderHomeScreen({super.key});
@@ -69,7 +67,9 @@ class _DashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AdvertisementManager>(
       builder: (context, mgr, _) {
-        final myAds = mgr.allAds.where((a) => a.publisher.userId == kMockProviderId).toList();
+        // ✅ تم استبدال kMockProviderId بـ AuthManager.userId الفعلي
+        final currentUserId = AuthManager.firebaseUid ?? '';
+        final myAds = mgr.allAds.where((a) => a.publisher.userId == currentUserId).toList();
         final activeAds = myAds.where((a) => a.isActive).length;
         final pendingAds = myAds.where((a) => a.isPending).length;
         final totalViews = myAds.fold<int>(0, (sum, a) => sum + a.stats.views);
@@ -80,7 +80,6 @@ class _DashboardTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ═══ بطاقة الترحيب والرصيد ═══
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -108,7 +107,8 @@ class _DashboardTab extends StatelessWidget {
                                 style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
                             const Text('رصيدك الحالي', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            const Text('150.00 د.أ', style: TextStyle(color: AppColors.goldLight, fontSize: 28, fontWeight: FontWeight.bold)),
+                            // TODO: ربط هذا الرصيد بـ PaymentManager أو Firebase
+                            const Text('0.00 د.أ', style: TextStyle(color: AppColors.goldLight, fontSize: 28, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -124,8 +124,6 @@ class _DashboardTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // ═══ الإحصائيات السريعة ═══
                 const Text('نظرة سريعة', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Row(
@@ -138,8 +136,6 @@ class _DashboardTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // ═══ الإجراءات السريعة ═══
                 const Text('إجراءات سريعة', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Row(
@@ -150,9 +146,7 @@ class _DashboardTab extends StatelessWidget {
                         'انشر إعلانك الجديد', 
                         Icons.add_circle_outline, 
                         AppColors.goldLight,
-                        () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateAdScreen()));
-                        },
+                        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateAdScreen())),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -162,16 +156,12 @@ class _DashboardTab extends StatelessWidget {
                         'سحب وإيداع', 
                         Icons.account_balance_wallet, 
                         AppColors.crystalBlue,
-                        () {
-                          _showWalletDialog(context);
-                        },
+                        () => _showWalletDialog(context),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // ═══ إعلاناتي الأخيرة ═══
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -179,7 +169,6 @@ class _DashboardTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                
                 if (myAds.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(30),
@@ -294,7 +283,6 @@ class _DashboardTab extends StatelessWidget {
               const SizedBox(width: 16),
               const Icon(Icons.calendar_today, size: 14, color: Colors.white54),
               const SizedBox(width: 4),
-              // ✅ تم إصلاح الخطأ: إعادة days بدلاً من inDays لأن النوع هو AdDuration
               Text('${ad.duration.days} يوم', style: const TextStyle(color: Colors.white54, fontSize: 11)),
               const Spacer(),
               if (ad.isPending)
@@ -325,7 +313,7 @@ class _DashboardTab extends StatelessWidget {
             Icon(Icons.account_balance_wallet, color: AppColors.goldLight, size: 50),
             SizedBox(height: 16),
             Text('رصيدك المتاح', style: TextStyle(color: Colors.white70, fontSize: 14)),
-            Text('150.00 د.أ', style: TextStyle(color: AppColors.goldLight, fontSize: 28, fontWeight: FontWeight.bold)),
+            Text('0.00 د.أ', style: TextStyle(color: AppColors.goldLight, fontSize: 28, fontWeight: FontWeight.bold)),
             SizedBox(height: 16),
             Text('سيتم تفعيل السحب الكامل قريباً', style: TextStyle(color: Colors.white54, fontSize: 12)),
           ],
@@ -353,13 +341,9 @@ class _OrdersTab extends StatefulWidget {
 
 class _OrdersTabState extends State<_OrdersTab> {
   String _selectedFilter = 'all';
-
-  final List<Map<String, dynamic>> _orders = const [
-    {'id': '1', 'customer': 'أحمد محمد', 'service': 'أسطوانة غاز', 'status': 'new', 'time': '12:10 م', 'amount': '12.50 د.أ'},
-    {'id': '2', 'customer': 'سارة علي', 'service': 'تنك مياه', 'status': 'progress', 'time': '11:45 ص', 'amount': '8.00 د.أ'},
-    {'id': '3', 'customer': 'محمد حسن', 'service': 'صيانة خزان', 'status': 'completed', 'time': '10:30 ص', 'amount': '25.00 د.أ'},
-    {'id': '4', 'customer': 'فاطمة أحمد', 'service': 'أسطوانة غاز', 'status': 'cancelled', 'time': 'أمس', 'amount': '12.50 د.أ'},
-  ];
+  
+  // ✅ تم حذف القائمة الوهمية. هنا سيتم ربط FutureBuilder أو StreamBuilder بـ OrderService
+  final List<Map<String, dynamic>> _orders = []; 
 
   @override
   Widget build(BuildContext context) {
@@ -381,11 +365,24 @@ class _OrdersTabState extends State<_OrdersTab> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: _orders.length,
-              itemBuilder: (context, index) => _buildOrderCard(_orders[index]),
-            ),
+            child: _orders.isEmpty 
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.receipt_long, size: 64, color: Colors.white38),
+                      SizedBox(height: 16),
+                      Text('لا توجد طلبات حالياً', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 8),
+                      Text('ستظهر هنا الطلبات الموجهة لمحطتك', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _orders.length,
+                  itemBuilder: (context, index) => _buildOrderCard(_orders[index]),
+                ),
           ),
         ],
       ),
@@ -409,6 +406,7 @@ class _OrdersTabState extends State<_OrdersTab> {
     );
   }
 
+  // ✅ تم الاحتفاظ بدالة رسم البطاقة جاهزة للاستخدام عند جلب البيانات الحقيقية
   Widget _buildOrderCard(Map<String, dynamic> order) {
     Color statusColor;
     String statusText;
@@ -532,7 +530,7 @@ class _OrdersTabState extends State<_OrdersTab> {
 
 // ═══════════════════════════════════════════════════════════
 //  التبويب 3: الإحصائيات
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 class _StatsTab extends StatelessWidget {
   const _StatsTab();
 
@@ -548,15 +546,14 @@ class _StatsTab extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildEarningsCard('اليوم', '45.00', 'د.أ', AppColors.crystalBlue, Icons.today),
+                _buildEarningsCard('اليوم', '0.00', 'د.أ', AppColors.crystalBlue, Icons.today),
                 const SizedBox(width: 12),
-                _buildEarningsCard('الأسبوع', '280.50', 'د.أ', AppColors.goldLight, Icons.date_range),
+                _buildEarningsCard('الأسبوع', '0.00', 'د.أ', AppColors.goldLight, Icons.date_range),
                 const SizedBox(width: 12),
-                _buildEarningsCard('الشهر', '1,250.00', 'د.أ', AppColors.refillGreen, Icons.calendar_month),
+                _buildEarningsCard('الشهر', '0.00', 'د.أ', AppColors.refillGreen, Icons.calendar_month),
               ],
             ),
             const SizedBox(height: 30),
-
             const Text('أداء الإعلانات', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Container(
@@ -568,36 +565,13 @@ class _StatsTab extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildStatRow('إجمالي المشاهدات', '1,234', Icons.visibility, AppColors.crystalBlue),
+                  _buildStatRow('إجمالي المشاهدات', '0', Icons.visibility, AppColors.crystalBlue),
                   const SizedBox(height: 16),
-                  _buildStatRow('إجمالي النقرات', '89', Icons.touch_app, AppColors.goldLight),
+                  _buildStatRow('إجمالي النقرات', '0', Icons.touch_app, AppColors.goldLight),
                   const SizedBox(height: 16),
-                  _buildStatRow('معدل التحويل', '7.2%', Icons.trending_up, AppColors.refillGreen),
+                  _buildStatRow('معدل التحويل', '0%', Icons.trending_up, AppColors.refillGreen),
                   const SizedBox(height: 16),
-                  _buildStatRow('الإعلانات النشطة', '3', Icons.check_circle, AppColors.goldLight),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            const Text('أداء الطلبات', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1F2E),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              child: Column(
-                children: [
-                  _buildStatRow('طلبات اليوم', '12', Icons.shopping_bag, AppColors.crystalBlue),
-                  const SizedBox(height: 16),
-                  _buildStatRow('طلبات مكتملة', '156', Icons.check_circle, AppColors.refillGreen),
-                  const SizedBox(height: 16),
-                  _buildStatRow('طلبات ملغاة', '8', Icons.cancel, AppColors.plumberRed),
-                  const SizedBox(height: 16),
-                  _buildStatRow('متوسط التقييم', '4.8 ⭐', Icons.star, AppColors.goldLight),
+                  _buildStatRow('الإعلانات النشطة', '0', Icons.check_circle, AppColors.goldLight),
                 ],
               ),
             ),
@@ -694,7 +668,7 @@ class _ProfileTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    AuthManager.phone.isNotEmpty ? AuthManager.phone : '0791234567',
+                    AuthManager.phone.isNotEmpty ? AuthManager.phone : 'غير متوفر', // ✅ تم إزالة الرقم الوهمي
                     style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
                   ),
                   const SizedBox(height: 8),
@@ -714,7 +688,6 @@ class _ProfileTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
             _buildProfileOption(Icons.edit, 'تعديل البيانات الشخصية', 'الاسم، الهاتف، الصورة', AppColors.crystalBlue, context),
             _buildProfileOption(Icons.lock, 'تغيير كلمة المرور', 'تحديث كلمة السر', AppColors.goldLight, context),
             _buildProfileOption(Icons.notifications, 'إعدادات الإشعارات', 'تخصيص التنبيهات', AppColors.refillGreen, context),

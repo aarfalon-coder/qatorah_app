@@ -22,9 +22,6 @@ class _SmartTopBarState extends State<SmartTopBar> {
   String _humidity = '--%';
   String _wind = '-- كم/س';
 
-  double _lat = 0.0;
-  double _lng = 0.0;
-
   Timer? _locationUpdateTimer;
 
   @override
@@ -64,8 +61,6 @@ class _SmartTopBarState extends State<SmartTopBar> {
 
       if (mounted) {
         setState(() {
-          _lat = position.latitude;
-          _lng = position.longitude;
           _fullLocation = address;
           // ✅ أخذ أول جزأين فقط (الشارع والحي) بدون تكرار
           final parts = address.split('،').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();

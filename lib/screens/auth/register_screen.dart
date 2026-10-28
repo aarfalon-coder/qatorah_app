@@ -8,7 +8,6 @@ import 'package:qatorah_app/screens/customer/customer_home.dart';
 import 'package:qatorah_app/screens/customer/terms_screen.dart';
 import 'package:qatorah_app/services/auth_service.dart';
 
-// ✅ تأكد من وجود كلمة const هنا بالضبط
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -20,21 +19,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  final _confirmPasswordCtrl = TextEditingController();
   final _authService = AuthService();
 
   bool _isLoading = false;
   bool _agreedToTerms = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -71,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               builder: (_) => OtpVerificationScreen(
                 phone: phone,
                 name: _nameCtrl.text.trim(),
-                role: UserRole.customer,
+                role: UserRole.customer, // ✅ مُصلَح: Enum بدل String
                 verificationId: verificationId,
               ),
             ),
@@ -111,7 +104,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       credential: credential,
       profile: {
         'firstName': _nameCtrl.text.trim(),
-        'role': 'customer',
+        'role':
+            'customer', // ✅ داخل Map: يبقى String (لأنه يُرسل إلى Firestore)
       },
     );
     if (!mounted) return;
@@ -119,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     await AuthManager.login(
       firstName: _nameCtrl.text.trim(),
       phone: phone,
-      role: UserRole.customer,
+      role: UserRole.customer, // ✅ مُصلَح: Enum بدل String
       firebaseUid: user?.uid,
     );
     if (!mounted) return;
@@ -137,7 +131,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         title: const Text(
           'سجل معنا',
-          style: TextStyle(color: AppColors.goldLight, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: AppColors.goldLight, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -155,11 +150,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
-                  const Icon(Icons.person_add, size: 70, color: AppColors.goldLight),
+                  const Icon(Icons.person_add,
+                      size: 70, color: AppColors.goldLight),
                   const SizedBox(height: 10),
                   const Text(
                     'إنشاء حساب جديد',
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 30),
@@ -176,32 +175,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Icons.phone,
                     keyboard: TextInputType.phone,
                     validator: (v) => v!.isEmpty ? 'أدخل رقم الهاتف' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    _passwordCtrl,
-                    'كلمة المرور',
-                    Icons.lock,
-                    obscure: _obscurePassword,
-                    canToggle: true,
-                    isObscured: _obscurePassword,
-                    onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
-                    validator: (v) => v!.length < 6 ? '6 أحرف على الأقل' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    _confirmPasswordCtrl,
-                    'تأكيد كلمة المرور',
-                    Icons.lock_outline,
-                    obscure: _obscureConfirmPassword,
-                    canToggle: true,
-                    isObscured: _obscureConfirmPassword,
-                    onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                    validator: (v) {
-                      if (v!.isEmpty) return 'مطلوب';
-                      if (v != _passwordCtrl.text) return 'غير متطابقة';
-                      return null;
-                    },
                   ),
                   const SizedBox(height: 24),
                   Container(
@@ -223,7 +196,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: 24,
                           child: Checkbox(
                             value: _agreedToTerms,
-                            onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
+                            onChanged: (v) =>
+                                setState(() => _agreedToTerms = v ?? false),
                             activeColor: AppColors.refillGreen,
                             checkColor: Colors.white,
                           ),
@@ -231,19 +205,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+                            onTap: () => setState(
+                                () => _agreedToTerms = !_agreedToTerms),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
                                   'أوافق على الاتفاقية وشروط الاستخدام',
-                                  style: TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      height: 1.5),
                                 ),
                                 const SizedBox(height: 4),
                                 GestureDetector(
                                   onTap: () => Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                                    MaterialPageRoute(
+                                        builder: (_) => const TermsScreen()),
                                   ),
                                   child: const Text(
                                     '← اقرأ الاتفاقية',
@@ -266,7 +245,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   GoldButton(
                     text: _isLoading ? 'جاري المعالجة...' : 'إتمام التسجيل',
                     icon: Icons.send,
-                    onPressed: (_isLoading || !_agreedToTerms) ? () {} : _register,
+                    onPressed:
+                        (_isLoading || !_agreedToTerms) ? () {} : _register,
                   ),
                   const SizedBox(height: 20),
                   Container(
@@ -278,17 +258,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.goldLight.withValues(alpha: 0.5), width: 2),
+                      border: Border.all(
+                          color: AppColors.goldLight.withValues(alpha: 0.5),
+                          width: 2),
                     ),
                     child: TextButton.icon(
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProviderRegisterScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const ProviderRegisterScreen()),
                       ),
-                      icon: const Icon(Icons.business_center, color: AppColors.goldLight, size: 24),
+                      icon: const Icon(Icons.business_center,
+                          color: AppColors.goldLight, size: 24),
                       label: const Text(
                         'سجل كمزود خدمة (يتطلب وثائق)',
-                        style: TextStyle(color: AppColors.goldLight, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: AppColors.goldLight,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -331,7 +318,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         prefixIcon: Icon(icon, color: AppColors.goldLight),
         suffixIcon: canToggle
             ? IconButton(
-                icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: AppColors.goldLight),
+                icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility,
+                    color: AppColors.goldLight),
                 onPressed: onToggle,
               )
             : null,
@@ -340,7 +328,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.goldDark.withValues(alpha: 0.5)),
+          borderSide:
+              BorderSide(color: AppColors.goldDark.withValues(alpha: 0.5)),
         ),
       ),
       validator: validator,

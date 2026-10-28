@@ -33,6 +33,7 @@ dependencies:
   shared_preferences: ^2.5.6
 
   image_picker: ^1.2.4
+  speech_to_text: ^7.5.0
   permission_handler: ^11.3.1
 
   intl: ^0.20.0
@@ -42,10 +43,10 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   http: ^1.2.2
   
-  # ✅ الإصدار المستقر والمضمون لماسح الباركود (لمزود الخدمة)
-  mobile_scanner: ^5.2.3 
+  # ✅ تم التحديث من 0.4.3 إلى 0.4.6 (يدعم v1beta بشكل صحيح)
+  google_generative_ai: ^0.4.6 
   
-  # ✅ مكتبة توليد QR Code للعملاء
+  mobile_scanner: ^5.2.3 
   qr_flutter: ^4.1.0
 
   flutter_launcher_icons: ^0.14.4
@@ -53,6 +54,7 @@ dependencies:
   share_plus: ^13.3.1
   url_launcher: ^6.3.3
   pinput: ^7.0.0
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
@@ -66,9 +68,6 @@ flutter:
     - assets/icons/
     - assets/fonts/
 
-# ═══════════════════════════════════════════════
-# App Icon Configuration
-# ═══════════════════════════════════════════════
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
@@ -78,9 +77,6 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/logo.png"
   adaptive_icon_foreground_inset: 0
 
-# ═══════════════════════════════════════════════
-# Splash Screen Configuration
-# ═══════════════════════════════════════════════
 flutter_native_splash:
   color: "#0A0E1A"
   image: "assets/images/splash.png"
